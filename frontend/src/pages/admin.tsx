@@ -8,9 +8,9 @@ export default function AdminPage() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState<string | null>(null);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
-  // Asumimos que guardas el token en localStorage al hacer login
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
   useEffect(() => {
@@ -51,15 +51,27 @@ export default function AdminPage() {
   }
 
   async function downloadDocument(docId: string) {
+    setDownloading(docId);
     try {
       const res = await fetch(`${API_URL}/admin/documents/${docId}/download`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Failed to get download link');
       const data = await res.json();
-      window.open(data.url, '_blank'); // Abre el PDF en una nueva pestaña
+      
+      // SOLUCIÓN: Crear un enlace invisible y simular clic para evitar bloqueo de popups
+      const link = document.createElement('a');
+      link.href = data.url;
+      link.target = '_blank';
+      link.download = data.fileName || 'document';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setDownloading(null);
     }
   }
 
@@ -73,8 +85,8 @@ export default function AdminPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Panel de Clientes */}
         <div>
-          <h2 className="text-xl font-semibold mb-4">Active Customers</h2>
-          <div className="bg-white shadow rounded-lg overflow-hidden">
+          <h2 className="text-xl font-semibold mb-4">Customers</h2>
+          <div className="bg-white shadow rounded-lg overflow-hidden border">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -99,7 +111,7 @@ export default function AdminPage() {
                   </tr>
                 ))}
                 {customers.length === 0 && (
-                  <tr><td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">No active customers found.</td></tr>
+                  <tr><td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">No customers found.</td></tr>
                 )}
               </tbody>
             </table>
@@ -110,9 +122,9 @@ export default function AdminPage() {
         <div>
           <h2 className="text-xl font-semibold mb-4">Customer Documents</h2>
           {!selectedCustomer ? (
-            <div className="text-gray-500 italic p-4 bg-gray-50 rounded-lg">Select a customer to view their files.</div>
+            <div className="text-gray-500 italic p-4 bg-gray-50 rounded-lg border">Select a customer to view their files.</div>
           ) : (
-            <div className="bg-white shadow rounded-lg overflow-hidden">
+            <div className="bg-white shadow rounded-lg overflow-hidden border">
               <ul className="divide-y divide-gray-200">
                 {documents.map((doc) => (
                   <li key={doc.id} className="p-4 flex justify-between items-center hover:bg-gray-50">
@@ -122,9 +134,10 @@ export default function AdminPage() {
                     </div>
                     <button 
                       onClick={() => downloadDocument(doc.id)}
-                      className="bg-black text-white px-3 py-1 text-sm rounded hover:bg-gray-800"
+                      disabled={downloading === doc.id}
+                      className="bg-black text-white px-3 py-1 text-sm rounded hover:bg-gray-800 disabled:opacity-50"
                     >
-                      Download
+                      {downloading === doc.id ? 'Opening...' : 'Download'}
                     </button>
                   </li>
                 ))}
