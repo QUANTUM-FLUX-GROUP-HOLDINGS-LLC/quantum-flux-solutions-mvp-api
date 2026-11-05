@@ -6,7 +6,6 @@ export function DisputeTracker({ token }: { token: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Estado del formulario
   const [bureau, setBureau] = useState('Equifax');
   const [accountName, setAccountName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
@@ -22,10 +21,7 @@ export function DisputeTracker({ token }: { token: string }) {
       const res = await fetch(`${apiUrl}/disputes`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) {
-        const data = await res.json();
-        setDisputes(data);
-      }
+      if (res.ok) setDisputes(await res.json());
     } catch (err) {
       console.error('Failed to fetch disputes', err);
     }
@@ -52,7 +48,7 @@ export function DisputeTracker({ token }: { token: string }) {
 
       setAccountName('');
       setAccountNumber('');
-      await fetchDisputes(); // Recargar la lista
+      await fetchDisputes();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -60,7 +56,27 @@ export function DisputeTracker({ token }: { token: string }) {
     }
   }
 
-  // Helper para los colores del status
+  async function downloadPdf(id: string) {
+    try {
+      const res = await fetch(`${apiUrl}/disputes/${id}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to generate PDF');
+      
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Dispute_Letter_${id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PENDING': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
@@ -79,17 +95,12 @@ export function DisputeTracker({ token }: { token: string }) {
       <p className="text-sm text-gray-500 mb-6">Add negative accounts to dispute them with the credit bureaus.</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Formulario */}
         <div className="bg-gray-50 p-4 rounded-lg border">
           <h4 className="font-medium text-gray-700 mb-3 text-sm">Add New Account</h4>
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Bureau</label>
-              <select 
-                value={bureau} 
-                onChange={(e) => setBureau(e.target.value)}
-                className="w-full text-sm border-gray-300 rounded-md p-2 bg-white"
-              >
+              <select value={bureau} onChange={(e) => setBureau(e.target.value)} className="w-full text-sm border-gray-300 rounded-md p-2 bg-white">
                 <option value="Equifax">Equifax</option>
                 <option value="Experian">Experian</option>
                 <option value="TransUnion">TransUnion</option>
@@ -97,54 +108,39 @@ export function DisputeTracker({ token }: { token: string }) {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Account Name</label>
-              <input 
-                type="text" 
-                value={accountName}
-                onChange={(e) => setAccountName(e.target.value)}
-                placeholder="e.g. Chase Credit Card"
-                className="w-full text-sm border-gray-300 rounded-md p-2 bg-white"
-                required
-              />
+              <input type="text" value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="e.g. Chase Credit Card" className="w-full text-sm border-gray-300 rounded-md p-2 bg-white" required />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Account Number (Optional)</label>
-              <input 
-                type="text" 
-                value={accountNumber}
-                onChange={(e) => setAccountNumber(e.target.value)}
-                placeholder="e.g. **** 1234"
-                className="w-full text-sm border-gray-300 rounded-md p-2 bg-white"
-              />
+              <input type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="e.g. **** 1234" className="w-full text-sm border-gray-300 rounded-md p-2 bg-white" />
             </div>
             {error && <p className="text-xs text-red-600">{error}</p>}
-            <button 
-              type="submit" 
-              disabled={busy || !accountName}
-              className="w-full bg-[#0f4c81] text-white px-3 py-2 rounded-md text-sm font-medium disabled:opacity-50 mt-2"
-            >
+            <button type="submit" disabled={busy || !accountName} className="w-full bg-[#0f4c81] text-white px-3 py-2 rounded-md text-sm font-medium disabled:opacity-50 mt-2">
               {busy ? 'Adding...' : 'Add to Dispute List'}
             </button>
           </form>
         </div>
 
-        {/* Lista de Disputas */}
         <div>
           <h4 className="font-medium text-gray-700 mb-3 text-sm">Your Disputes ({disputes.length})</h4>
           {disputes.length === 0 ? (
-            <div className="text-sm text-gray-500 italic p-4 bg-gray-50 rounded-lg border text-center">
-              No disputes added yet.
-            </div>
+            <div className="text-sm text-gray-500 italic p-4 bg-gray-50 rounded-lg border text-center">No disputes added yet.</div>
           ) : (
             <ul className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
               {disputes.map((d) => (
-                <li key={d.id} className="p-3 border rounded-lg bg-white shadow-sm flex justify-between items-center">
-                  <div>
-                    <p className="font-medium text-sm text-gray-800">{d.accountName}</p>
-                    <p className="text-xs text-gray-500">{d.bureau} {d.accountNumber ? `• ${d.accountNumber}` : ''}</p>
+                <li key={d.id} className="p-3 border rounded-lg bg-white shadow-sm flex flex-col gap-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-sm text-gray-800">{d.accountName}</p>
+                      <p className="text-xs text-gray-500">{d.bureau} {d.accountNumber ? `• ${d.accountNumber}` : ''}</p>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${getStatusColor(d.status)}`}>
+                      {d.status.replace('_', ' ')}
+                    </span>
                   </div>
-                  <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${getStatusColor(d.status)}`}>
-                    {d.status.replace('_', ' ')}
-                  </span>
+                  <button onClick={() => downloadPdf(d.id)} className="text-xs text-blue-600 font-medium text-left hover:underline flex items-center gap-1">
+                    📄 Download Dispute Letter (PDF)
+                  </button>
                 </li>
               ))}
             </ul>
