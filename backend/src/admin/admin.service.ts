@@ -9,8 +9,7 @@ export class AdminService {
     private readonly supabase: SupabaseService,
   ) {}
 
-  async listActiveCustomers() {
-    // Buscamos a TODOS los clientes, sin importar el estatus
+  async listAllCustomers() {
     return this.prisma.customer.findMany({
       select: { id: true, email: true, name: true, status: true, createdAt: true },
     });
@@ -31,5 +30,19 @@ export class AdminService {
     if (error) throw new InternalServerErrorException(error.message);
 
     return { url: data.signedUrl, expiresIn: 600, fileName: doc.fileName };
+  }
+
+  // NUEVOS MÉTODOS PARA DISPUTAS
+  async listAllDisputes() {
+    return this.prisma.dispute.findMany({
+      include: { customer: { select: { name: true, email: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async updateDisputeStatus(id: string, status: string) {
+    const dispute = await this.prisma.dispute.findUnique({ where: { id } });
+    if (!dispute) throw new NotFoundException('Dispute not found');
+    return this.prisma.dispute.update({ where: { id }, data: { status } });
   }
 }

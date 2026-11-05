@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Patch, Body } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { AdminService } from './admin.service';
@@ -10,7 +10,7 @@ export class AdminController {
 
   @Get('customers')
   listCustomers() {
-    return this.admin.listActiveCustomers();
+    return this.admin.listAllCustomers();
   }
 
   @Get('customers/:id/documents')
@@ -21,5 +21,15 @@ export class AdminController {
   @Get('documents/:id/download')
   downloadDocument(@Param('id') id: string) {
     return this.admin.createSignedUrl(id);
+  }
+
+  @Get('disputes')
+  listDisputes() {
+    return this.admin.listAllDisputes();
+  }
+
+  @Patch('disputes/:id')
+  updateDispute(@Param('id') id: string, @Body('status') status: string) {
+    return this.admin.updateDisputeStatus(id, status);
   }
 }
