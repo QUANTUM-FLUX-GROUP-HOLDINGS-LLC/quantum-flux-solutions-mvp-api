@@ -15,6 +15,7 @@ model Customer {
   password  String?
   stripeId  String?    @unique
   status    String     @default("PENDING")
+  isAdmin   Boolean    @default(false)
   createdAt DateTime   @default(now())
   documents Document[]
 }
