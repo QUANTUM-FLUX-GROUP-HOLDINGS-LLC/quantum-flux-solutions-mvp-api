@@ -50,8 +50,8 @@ export class StripeService {
             quantity: 1,
           },
         ],
-        success_url: 'http://localhost:3001/dashboard?success=true', // Redirige al dashboard
-        cancel_url: 'http://localhost:3001/dashboard?canceled=true',
+        success_url: `${process.env.FRONTEND_URL || 'http://localhost:3001'}/dashboard?success=true`,
+        cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3001'}/dashboard?canceled=true`,
       } as any);
       return { url: session.url };
     } catch (error: any) {
