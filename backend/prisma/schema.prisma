@@ -18,6 +18,7 @@ model Customer {
   isAdmin   Boolean    @default(false)
   createdAt DateTime   @default(now())
   documents Document[]
+  taxProfile  TaxProfile?
   disputes    Dispute[]
 }
 
@@ -54,4 +55,15 @@ model Dispute {
   updatedAt     DateTime @updatedAt
 
   @@index([customerId])
+}
+
+model TaxProfile {
+  id           String   @id @default(uuid())
+  customerId   String   @unique
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  filingStatus String   @default("SINGLE")
+  dependents   Int      @default(0)
+  income       Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

@@ -8,6 +8,7 @@ import { DocumentsModule } from './documents/documents.module';
 import { AdminModule } from './admin/admin.module';
 import { MailModule } from './mail/mail.module';
 import { DisputesModule } from './disputes/disputes.module';
+import { TaxModule } from './tax/tax.module';
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { DisputesModule } from './disputes/disputes.module';
     DocumentsModule,
     AdminModule,
     MailModule,
-    DisputesModule, // <-- Aquí está de vuelta
+    DisputesModule,
+    TaxModule, // <-- Aquí está de vuelta
   ],
   controllers: [AppController],
   providers: [],

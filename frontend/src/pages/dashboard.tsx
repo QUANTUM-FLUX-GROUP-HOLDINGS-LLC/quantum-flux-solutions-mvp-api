@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { UploadCard } from '../components/UploadCard';
 import { DisputeTracker } from '../components/DisputeTracker';
+import { TaxForm } from '../components/TaxForm';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -79,28 +80,21 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Tax Preparation Card */}
+            {/* Tax Preparation Card (Form) */}
             <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
               <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-2">
                 <span className="text-[#4a90e2]">📄</span> Tax Preparation
               </h3>
-              <p className="text-sm text-gray-500 mb-6">Your tax filing status will appear here once the season begins.</p>
+              <p className="text-sm text-gray-500 mb-6">Please provide your tax details for the 2026 season.</p>
               
-              <div className="bg-gray-50 p-4 rounded-lg flex items-center justify-between border">
-                <div>
-                  <p className="font-medium text-sm text-gray-800">2026 Tax Season</p>
-                  <div className="w-48 h-2 bg-gray-200 rounded-full mt-2 overflow-hidden">
-                    <div className="w-1/4 h-full bg-[#0f4c81]"></div>
-                  </div>
-                </div>
-                <span className="text-xs bg-gray-200 text-gray-600 px-3 py-1 rounded-full font-medium">Coming Soon</span>
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <TaxForm token={token} />
               </div>
             </div>
           </div>
 
-          {/* NUEVO: Componente del Rastreador de Disputas */}
+          {/* Credit Dispute Tracker */}
           <DisputeTracker token={token} />
-
         </main>
       </div>
     </div>
