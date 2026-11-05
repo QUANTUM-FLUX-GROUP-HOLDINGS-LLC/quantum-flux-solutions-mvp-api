@@ -9,29 +9,21 @@ import { AdminService } from './admin.service';
 export class AdminController {
   constructor(private readonly admin: AdminService) {}
 
+  @Get('metrics')
+  @Roles('ADMIN', 'CREDIT_REPAIR', 'TAX_PERSONAL', 'TAX_BUSINESS', 'BOOKKEEPING')
+  getMetrics() { return this.admin.getDashboardMetrics(); }
+
   @Get('customers')
   @Roles('ADMIN', 'CREDIT_REPAIR', 'TAX_PERSONAL', 'TAX_BUSINESS', 'BOOKKEEPING')
-  listCustomers() {
-    return this.admin.listAllCustomers();
-  }
+  listCustomers() { return this.admin.listAllCustomers(); }
 
   @Get('customers/:id/documents')
   @Roles('ADMIN', 'CREDIT_REPAIR', 'TAX_PERSONAL', 'TAX_BUSINESS', 'BOOKKEEPING')
-  listDocuments(@Param('id') id: string) {
-    return this.admin.listDocuments(id);
-  }
-
-  @Get('documents/:id/download')
-  @Roles('ADMIN', 'CREDIT_REPAIR', 'TAX_PERSONAL', 'TAX_BUSINESS', 'BOOKKEEPING')
-  downloadDocument(@Param('id') id: string) {
-    return this.admin.createSignedUrl(id);
-  }
+  listDocuments(@Param('id') id: string) { return this.admin.listDocuments(id); }
 
   @Get('disputes')
   @Roles('ADMIN', 'CREDIT_REPAIR')
-  listDisputes() {
-    return this.admin.listAllDisputes();
-  }
+  listDisputes() { return this.admin.listAllDisputes(); }
 
   @Patch('disputes/:id')
   @Roles('ADMIN', 'CREDIT_REPAIR')
@@ -45,7 +37,6 @@ export class AdminController {
     return this.admin.createDisputeForCustomer(id, body);
   }
 
-  // OPCIÓN 3: Ruta para obtener el perfil de Taxes del cliente
   @Get('customers/:id/tax')
   @Roles('ADMIN', 'TAX_PERSONAL', 'TAX_BUSINESS')
   getCustomerTaxProfile(@Param('id') id: string) {
