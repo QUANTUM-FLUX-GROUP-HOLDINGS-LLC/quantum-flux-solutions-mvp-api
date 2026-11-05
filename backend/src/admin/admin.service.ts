@@ -10,9 +10,9 @@ export class AdminService {
   ) {}
 
   async listActiveCustomers() {
+    // Buscamos a TODOS los clientes, sin importar el estatus
     return this.prisma.customer.findMany({
-      where: { status: 'ACTIVE' },
-      select: { id: true, email: true, name: true, createdAt: true },
+      select: { id: true, email: true, name: true, status: true, createdAt: true },
     });
   }
 
