@@ -1,12 +1,13 @@
 import { Injectable, InternalServerErrorException, BadRequestException, NotFoundException } from '@nestjs/common';
 import Stripe from 'stripe';
 import { PrismaService } from '../../core/database/prisma.service';
+import { MailService } from '../../mail/mail.service';
 
 @Injectable()
 export class StripeService {
   private stripe: Stripe;
 
-  constructor(private prisma: PrismaService) {
+  constructor(private prisma: PrismaService, private mail: MailService) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock');
   }
 
@@ -80,11 +81,15 @@ export class StripeService {
       console.log(`✅ Payment successful for customer: ${customerId}. Updating DB...`);
 
       try {
-        await this.prisma.customer.update({
+        const updatedUser = await this.prisma.customer.update({
           where: { stripeId: customerId },
           data: { status: 'ACTIVE' },
         });
         console.log(`🎉 DB Updated successfully for ${customerId}`);
+
+        // Enviar correo de pago exitoso
+        await this.mail.sendPaymentSuccessEmail(updatedUser.email, updatedUser.name);
+        
       } catch (error) {
         console.log(`⚠️ Customer ${customerId} not found in DB.`);
       }
