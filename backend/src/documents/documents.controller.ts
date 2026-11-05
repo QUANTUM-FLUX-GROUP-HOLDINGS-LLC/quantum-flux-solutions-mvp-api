@@ -1,15 +1,9 @@
 import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Req,
-  UploadedFile,
-  UseGuards,
-  UseInterceptors,
+  Body, Controller, Get, Param, Post, Req, UploadedFile,
+  UseGuards, UseInterceptors, BadRequestException
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { DocumentsService } from './documents.service';
 import { DocumentCategory } from '@prisma/client';
@@ -20,22 +14,41 @@ export class DocumentsController {
   constructor(private readonly documents: DocumentsService) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
-  upload(
+  @UseInterceptors(FileInterceptor('file', { 
+    storage: memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 } 
+  }))
+  async upload(
     @Req() req: any,
     @UploadedFile() file: Express.Multer.File,
     @Body('category') category?: DocumentCategory,
   ) {
-    return this.documents.upload(req.user.sub, file, category);
+    if (!file) throw new BadRequestException('File is required');
+
+    // Buscamos el ID en las propiedades más comunes del JWT
+    const customerId = req.user.id || req.user.sub || req.user.userId;
+    
+    if (!customerId) {
+      throw new BadRequestException('No se pudo identificar al usuario desde el token');
+    }
+
+    try {
+      return await this.documents.upload(customerId, file, category);
+    } catch (error) {
+      // Devolvemos el error real para que el frontend no muestre un 500 genérico
+      throw new BadRequestException(error.message || 'Error al procesar el archivo');
+    }
   }
 
   @Get()
   list(@Req() req: any) {
-    return this.documents.listForCustomer(req.user.sub);
+    const customerId = req.user.id || req.user.sub || req.user.userId;
+    return this.documents.listForCustomer(customerId);
   }
 
   @Get(':id/download')
   download(@Req() req: any, @Param('id') id: string) {
-    return this.documents.createSignedUrl(req.user.sub, id);
+    const customerId = req.user.id || req.user.sub || req.user.userId;
+    return this.documents.createSignedUrl(customerId, id);
   }
 }
