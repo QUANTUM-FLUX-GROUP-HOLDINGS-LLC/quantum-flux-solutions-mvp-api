@@ -22,7 +22,19 @@ export function UploadCard({ token }: { token: string }) {
         headers: { Authorization: `Bearer ${token}` },
         body: form,
       });
-      if (!res.ok) throw new Error((await res.json()).message ?? 'Upload failed');
+
+      // Leer la respuesta como texto primero para evitar el JSON.parse crash
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        // Si no es JSON, es un error del servidor (ej. HTML de Render)
+        data = { message: text || `Server Error: ${res.status}` };
+      }
+
+      if (!res.ok) throw new Error(data.message ?? 'Upload failed');
+      
       setFile(null);
       setSuccess(true);
     } catch (e: any) {
@@ -45,10 +57,10 @@ export function UploadCard({ token }: { token: string }) {
         disabled={!file || busy}
         className="w-full bg-black text-white px-3 py-2 rounded-md disabled:opacity-50"
       >
-        {busy ? 'Uploading...' : 'Upload File'}
+        {busy ? 'Uploading (may take 50s if server is asleep)...' : 'Upload File'}
       </button>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {success && <p className="text-sm text-green-600">File uploaded successfully!</p>}
+      {error && <p className="text-sm text-red-600 font-medium bg-red-50 p-2 rounded">{error}</p>}
+      {success && <p className="text-sm text-green-600 font-medium bg-green-50 p-2 rounded">File uploaded successfully!</p>}
     </div>
   );
 }
