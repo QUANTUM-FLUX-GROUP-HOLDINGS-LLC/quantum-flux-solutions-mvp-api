@@ -32,7 +32,6 @@ export class AdminService {
     return { url: data.signedUrl, expiresIn: 600, fileName: doc.fileName };
   }
 
-  // NUEVOS MÉTODOS PARA DISPUTAS
   async listAllDisputes() {
     return this.prisma.dispute.findMany({
       include: { customer: { select: { name: true, email: true } } },
@@ -44,5 +43,16 @@ export class AdminService {
     const dispute = await this.prisma.dispute.findUnique({ where: { id } });
     if (!dispute) throw new NotFoundException('Dispute not found');
     return this.prisma.dispute.update({ where: { id }, data: { status } });
+  }
+
+  // NUEVO MÉTODO: Crear disputa como Admin
+  async createDisputeForCustomer(customerId: string, data: { bureau: string, accountName: string, accountNumber?: string }) {
+    return this.prisma.dispute.create({
+      data: {
+        ...data,
+        customerId,
+        status: 'SENT', // Lo ponemos en SENT automáticamente para que el cliente ya pueda verla
+      },
+    });
   }
 }

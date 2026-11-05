@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards, Patch, Body } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Patch, Body, Post } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { AdminService } from './admin.service';
@@ -31,5 +31,11 @@ export class AdminController {
   @Patch('disputes/:id')
   updateDispute(@Param('id') id: string, @Body('status') status: string) {
     return this.admin.updateDisputeStatus(id, status);
+  }
+
+  // NUEVA RUTA: Crear disputa en nombre de un cliente
+  @Post('customers/:id/disputes')
+  createDisputeForCustomer(@Param('id') id: string, @Body() body: any) {
+    return this.admin.createDisputeForCustomer(id, body);
   }
 }
