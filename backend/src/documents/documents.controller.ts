@@ -34,7 +34,7 @@ export class DocumentsController {
 
     try {
       return await this.documents.upload(customerId, file, category);
-    } catch (error) {
+    } catch (error: any) {
       // Devolvemos el error real para que el frontend no muestre un 500 genérico
       throw new BadRequestException(error.message || 'Error al procesar el archivo');
     }
