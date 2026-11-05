@@ -138,9 +138,15 @@ export function DisputeTracker({ token }: { token: string }) {
                       {d.status.replace('_', ' ')}
                     </span>
                   </div>
-                  <button onClick={() => downloadPdf(d.id)} className="text-xs text-blue-600 font-medium text-left hover:underline flex items-center gap-1">
-                    📄 Download Dispute Letter (PDF)
-                  </button>
+                  {d.status !== 'PENDING' ? (
+                    <button onClick={() => downloadPdf(d.id)} className="text-xs text-blue-600 font-medium text-left hover:underline flex items-center gap-1">
+                      📄 Download Dispute Letter (PDF)
+                    </button>
+                  ) : (
+                    <span className="text-xs text-gray-400 italic">
+                      ⏳ Pending Admin Review
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>

@@ -3,65 +3,55 @@ import { useRouter } from 'next/router';
 
 export default function AdminPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'customers' | 'disputes'>('customers');
-  
   const [customers, setCustomers] = useState<any[]>([]);
-  const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
+  const [selectedClient, setSelectedClient] = useState<any | null>(null);
   const [documents, setDocuments] = useState<any[]>([]);
-  
   const [disputes, setDisputes] = useState<any[]>([]);
   
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [downloading, setDownloading] = useState<string | null>(null);
+  const [bureau, setBureau] = useState('Equifax');
+  const [accountName, setAccountName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
   useEffect(() => {
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    fetchInitialData();
+    if (!token) { router.push('/login'); return; }
+    fetchCustomers();
   }, [token]);
 
-  async function fetchInitialData() {
-    setLoading(true);
-    setError(null);
+  async function fetchCustomers() {
     try {
-      const [custRes, dispRes] = await Promise.all([
-        fetch(`${API_URL}/admin/customers`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_URL}/admin/disputes`, { headers: { Authorization: `Bearer ${token}` } })
-      ]);
-
-      if (!custRes.ok || !dispRes.ok) throw new Error('Failed to fetch data (Are you an admin?)');
-
-      setCustomers(await custRes.json());
-      setDisputes(await dispRes.json());
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      const res = await fetch(`${API_URL}/admin/customers`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) setCustomers(await res.json());
+    } catch (err) {
+      console.error(err);
     }
   }
 
-  async function fetchDocuments(customerId: string) {
+  async function loadClientWorkspace(client: any) {
+    setSelectedClient(client);
     try {
-      const res = await fetch(`${API_URL}/admin/customers/${customerId}/documents`, {
+      const docRes = await fetch(`${API_URL}/admin/customers/${client.id}/documents`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error('Failed to fetch documents');
-      const data = await res.json();
-      setDocuments(data);
-      setSelectedCustomer(customerId);
-    } catch (err: any) {
-      alert(err.message);
+      if (docRes.ok) setDocuments(await docRes.json());
+
+      const dispRes = await fetch(`${API_URL}/admin/disputes`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (dispRes.ok) {
+        const allDisputes = await dispRes.json();
+        setDisputes(allDisputes.filter((d: any) => d.customerId === client.id));
+      }
+    } catch (err) {
+      console.error(err);
     }
   }
 
   async function downloadDocument(docId: string) {
-    setDownloading(docId);
     try {
       const res = await fetch(`${API_URL}/admin/documents/${docId}/download`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -77,146 +67,108 @@ export default function AdminPage() {
       document.body.removeChild(link);
     } catch (err: any) {
       alert(err.message);
-    } finally {
-      setDownloading(null);
     }
   }
 
-  async function updateDispute(id: string, newStatus: string) {
-    try {
-      const res = await fetch(`${API_URL}/admin/disputes/${id}`, {
-        method: 'PATCH',
-        headers: { 
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}` 
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
-      if (!res.ok) throw new Error('Failed to update dispute');
-      
-      // Actualizar el estado local sin recargar toda la página
-      setDisputes(disputes.map(d => d.id === id ? { ...d, status: newStatus } : d));
-    } catch (err: any) {
-      alert(err.message);
-    }
+  async function importCreditReport() {
+    alert("In a production environment, this would connect to the SmartCredit API and pull the user's 3-bureau report automatically.");
   }
-
-  if (loading) return <div className="p-10 font-medium">Loading admin panel...</div>;
-  if (error) return <div className="p-10 text-red-600 font-medium">Error: {error}</div>;
 
   return (
-    <div className="p-10 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <div className="flex gap-2">
-          <button onClick={() => setActiveTab('customers')} className={`px-4 py-2 rounded-md font-medium ${activeTab === 'customers' ? 'bg-[#0f4c81] text-white' : 'bg-gray-200 text-gray-700'}`}>Customers & Files</button>
-          <button onClick={() => setActiveTab('disputes')} className={`px-4 py-2 rounded-md font-medium ${activeTab === 'disputes' ? 'bg-[#0f4c81] text-white' : 'bg-gray-200 text-gray-700'}`}>Credit Disputes</button>
+    <div className="min-h-screen bg-gray-50 flex">
+      <div className="w-64 bg-gray-900 text-white flex flex-col">
+        <div className="p-6 text-xl font-bold text-red-500">Quantum Flux CRM</div>
+        <nav className="flex-1 px-4 space-y-2 mt-4">
+          <div className="bg-gray-800 px-4 py-2 rounded-md font-medium text-sm">Client Operations</div>
+          <div className="px-4 py-2 text-sm text-gray-400 hover:text-white cursor-pointer">All Clients</div>
+          <div className="px-4 py-2 text-sm text-gray-400 hover:text-white cursor-pointer">Dispute Center</div>
+        </nav>
+        <div className="p-4 border-t border-gray-700">
+          <button onClick={() => router.push('/login')} className="text-sm text-gray-400 hover:text-white">Sign Out</button>
         </div>
       </div>
-      
-      {activeTab === 'customers' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Customers</h2>
-            <div className="bg-white shadow rounded-lg overflow-hidden border">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {customers.map((c) => (
-                    <tr key={c.id} className={selectedCustomer === c.id ? 'bg-blue-50' : ''}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{c.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{c.email}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                        <button onClick={() => fetchDocuments(c.id)} className="text-blue-600 hover:text-blue-900 font-medium">View Files</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
 
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Customer Documents</h2>
-            {!selectedCustomer ? (
-              <div className="text-gray-500 italic p-4 bg-gray-50 rounded-lg border">Select a customer to view their files.</div>
-            ) : (
-              <div className="bg-white shadow rounded-lg overflow-hidden border">
-                <ul className="divide-y divide-gray-200">
-                  {documents.map((doc) => (
-                    <li key={doc.id} className="p-4 flex justify-between items-center hover:bg-gray-50">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{doc.fileName}</p>
-                        <p className="text-xs text-gray-500">{doc.category} • {(doc.sizeBytes / 1024 / 1024).toFixed(2)} MB</p>
-                      </div>
-                      <button onClick={() => downloadDocument(doc.id)} disabled={downloading === doc.id} className="bg-black text-white px-3 py-1 text-sm rounded hover:bg-gray-800 disabled:opacity-50">
-                        {downloading === doc.id ? 'Opening...' : 'Download'}
-                      </button>
-                    </li>
-                  ))}
-                  {documents.length === 0 && <li className="p-4 text-center text-sm text-gray-500">No documents uploaded yet.</li>}
-                </ul>
+      <div className="flex-1 flex">
+        <div className="w-1/3 border-r bg-white h-screen overflow-y-auto">
+          <div className="p-6 border-b">
+            <h2 className="text-lg font-bold">Active Clients</h2>
+            <input type="text" placeholder="Search clients..." className="mt-2 w-full border rounded p-2 text-sm" />
+          </div>
+          <ul>
+            {customers.map((c) => (
+              <li 
+                key={c.id} 
+                onClick={() => loadClientWorkspace(c)}
+                className={`p-4 border-b cursor-pointer hover:bg-gray-50 ${selectedClient?.id === c.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}
+              >
+                <p className="font-semibold text-sm">{c.name}</p>
+                <p className="text-xs text-gray-500">{c.email}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="w-2/3 p-8 bg-gray-50 h-screen overflow-y-auto">
+          {!selectedClient ? (
+            <div className="text-center text-gray-500 mt-20">Select a client to open their workspace.</div>
+          ) : (
+            <div className="space-y-6 max-w-4xl">
+              <div className="bg-white p-6 rounded-lg shadow-sm border flex justify-between items-center">
+                <div>
+                  <h1 className="text-2xl font-bold">{selectedClient.name}'s Workspace</h1>
+                  <p className="text-sm text-gray-500">Status: {selectedClient.status}</p>
+                </div>
+                <button onClick={importCreditReport} className="bg-purple-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-purple-700">
+                  ⚡ Import SmartCredit Report (API)
+                </button>
               </div>
-            )}
-          </div>
-        </div>
-      )}
 
-      {activeTab === 'disputes' && (
-        <div>
-          <h2 className="text-xl font-semibold mb-4">All Credit Disputes</h2>
-          <div className="bg-white shadow rounded-lg overflow-hidden border">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Bureau</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Account</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Update Status</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {disputes.map((d) => (
-                  <tr key={d.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {d.customer?.name} <br/><span className="text-xs text-gray-500">{d.customer?.email}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{d.bureau}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{d.accountName}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${d.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : d.status === 'DELETED' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
-                        {d.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                      <select 
-                        value={d.status}
-                        onChange={(e) => updateDispute(d.id, e.target.value)}
-                        className="border-gray-300 rounded-md text-sm p-1 bg-white"
-                      >
-                        <option value="PENDING">PENDING</option>
-                        <option value="SENT">SENT</option>
-                        <option value="IN_REVIEW">IN REVIEW</option>
-                        <option value="DELETED">DELETED</option>
-                      </select>
-                    </td>
-                  </tr>
-                ))}
-                {disputes.length === 0 && (
-                  <tr><td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">No disputes found.</td></tr>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="bg-white p-6 rounded-lg shadow-sm border">
+                  <h3 className="font-bold mb-4 text-gray-800">Verification Documents</h3>
+                  {documents.length === 0 ? <p className="text-sm text-gray-500">No docs uploaded.</p> : (
+                    <ul className="space-y-2">
+                      {documents.map(d => (
+                        <li key={d.id} className="flex justify-between items-center text-sm border p-2 rounded">
+                          <span className="truncate w-40">{d.fileName}</span>
+                          <button onClick={() => downloadDocument(d.id)} className="text-blue-600 hover:underline">Download</button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow-sm border">
+                  <h3 className="font-bold mb-4 text-gray-800">Add Dispute (Internal)</h3>
+                  <form onSubmit={(e) => { e.preventDefault(); alert('In production, this creates a dispute record for the client.'); }} className="space-y-3">
+                    <select value={bureau} onChange={e => setBureau(e.target.value)} className="w-full border p-2 rounded text-sm">
+                      <option>Equifax</option><option>Experian</option><option>TransUnion</option>
+                    </select>
+                    <input type="text" placeholder="Account Name" value={accountName} onChange={e => setAccountName(e.target.value)} className="w-full border p-2 rounded text-sm" />
+                    <input type="text" placeholder="Account Number" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} className="w-full border p-2 rounded text-sm" />
+                    <button type="submit" className="w-full bg-black text-white p-2 rounded text-sm">Create Dispute Record</button>
+                  </form>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-lg shadow-sm border">
+                <h3 className="font-bold mb-4 text-gray-800">Active Disputes</h3>
+                {disputes.length === 0 ? <p className="text-sm text-gray-500">No disputes created yet.</p> : (
+                  <ul className="space-y-2">
+                    {disputes.map(d => (
+                      <li key={d.id} className="flex justify-between items-center text-sm border p-2 rounded">
+                        <span>{d.bureau} - {d.accountName}</span>
+                        <span className="font-bold text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">{d.status}</span>
+                      </li>
+                    ))}
+                  </ul>
                 )}
-              </tbody>
-            </table>
-          </div>
+              </div>
+
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
