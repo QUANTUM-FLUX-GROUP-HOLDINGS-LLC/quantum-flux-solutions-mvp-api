@@ -190,8 +190,8 @@ export default function Dashboard() {
                     </div>
                   ) : (
                     <>
-                      <p className="text-sm font-semibold text-gray-700">Click to upload or drag and drop</p>
-                      <p className="text-xs text-gray-400 mt-1">PDF, JPG or PNG (max. 10MB)</p>
+                      <p className="text-sm font-semibold text-gray-700">Actual File Upload</p>
+                      <p className="text-xs text-gray-400 mt-1"></p>
                     </>
                   )}
                 </div>
