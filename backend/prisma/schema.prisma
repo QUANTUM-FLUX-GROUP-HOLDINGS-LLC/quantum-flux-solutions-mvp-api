@@ -18,6 +18,7 @@ model Customer {
   isAdmin   Boolean    @default(false)
   createdAt DateTime   @default(now())
   documents Document[]
+  disputes    Dispute[]
 }
 
 model Document {
@@ -39,4 +40,18 @@ enum DocumentCategory {
   TAX_DOCUMENT
   BOOKKEEPING
   OTHER
+}
+
+model Dispute {
+  id            String   @id @default(uuid())
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  bureau        String   // Equifax, Experian, TransUnion
+  accountName   String
+  accountNumber String?
+  status        String   @default("PENDING") // PENDING, SENT, IN_REVIEW, DELETED
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([customerId])
 }

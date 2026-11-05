@@ -7,6 +7,7 @@ import { StorageModule } from './storage/storage.module';
 import { DocumentsModule } from './documents/documents.module';
 import { AdminModule } from './admin/admin.module';
 import { MailModule } from './mail/mail.module';
+import { DisputesModule } from './disputes/disputes.module';
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { MailModule } from './mail/mail.module';
     StorageModule,
     DocumentsModule,
     AdminModule,
-    MailModule, // <-- Aquí está de vuelta
+    MailModule,
+    DisputesModule, // <-- Aquí está de vuelta
   ],
   controllers: [AppController],
   providers: [],
