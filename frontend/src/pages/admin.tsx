@@ -17,7 +17,7 @@ export default function AdminPage() {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
   useEffect(() => {
-    if (!token) { router.push('/login'); return; }
+    if (!token) { router.push('/staff-login'); return; }
     
     const u = localStorage.getItem('user');
     if (u) {
@@ -115,7 +115,7 @@ export default function AdminPage() {
         </nav>
         
         <div className="p-4 border-t border-gray-700">
-          <button onClick={() => { localStorage.clear(); router.push('/login'); }} className="text-sm text-gray-400 hover:text-white">Sign Out</button>
+          <button onClick={() => { localStorage.clear(); router.push('/staff-login'); }} className="text-sm text-gray-400 hover:text-white">Sign Out</button>
         </div>
       </div>
 
