@@ -5,6 +5,7 @@ import { PrismaModule } from './core/database/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { StorageModule } from './storage/storage.module';
 import { DocumentsModule } from './documents/documents.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { DocumentsModule } from './documents/documents.module';
     AuthModule,
     StorageModule,
     DocumentsModule,
+    AdminModule, // <-- Aquí está de vuelta
   ],
   controllers: [AppController],
   providers: [],
