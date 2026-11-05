@@ -14,13 +14,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    // Buscamos el usuario en la DB para obtener el isAdmin actualizado
+    // Buscamos al usuario en la DB en CADA petición
     const user = await this.prisma.customer.findUnique({
-      where: { id: payload.sub || payload.id }, 
+      where: { id: payload.sub || payload.id },
     });
-    if (!user) throw new UnauthorizedException();
+    if (!user) throw new UnauthorizedException('User not found');
     
-    // Devolvemos el usuario completo (incluye isAdmin)
-    return user; 
+    // Retornamos el usuario con su isAdmin actualizado de la DB
+    return { ...user, isAdmin: user.isAdmin === true };
   }
 }
