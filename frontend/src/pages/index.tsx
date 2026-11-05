@@ -25,7 +25,7 @@ export default function Home() {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:3000/api/stripe/create-customer', {
+      const response = await fetch('https://quantum-flux-api-npru.onrender.com/api/stripe/create-customer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, name }),
@@ -45,7 +45,7 @@ export default function Home() {
     if (!result) return;
     setCheckoutLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/stripe/create-checkout-session', {
+      const response = await fetch('https://quantum-flux-api-npru.onrender.com/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ customerId: result.stripeId, email: result.email }),

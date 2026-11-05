@@ -22,7 +22,7 @@ export default function Dashboard() {
     if (!token) return router.push('/login');
 
     try {
-      const res = await fetch('http://localhost:3000/api/auth/me', {
+      const res = await fetch('https://quantum-flux-api-npru.onrender.com/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -52,7 +52,7 @@ export default function Dashboard() {
     setPaying(true);
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:3000/api/stripe/create-checkout-session', {
+      const res = await fetch('https://quantum-flux-api-npru.onrender.com/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });

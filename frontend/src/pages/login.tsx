@@ -19,7 +19,7 @@ export default function Login() {
     const body = isRegister ? { name, email, password } : { email, password };
 
     try {
-      const res = await fetch(`http://localhost:3000/api/auth/${endpoint}`, {
+      const res = await fetch(`https://quantum-flux-api-npru.onrender.com/api/auth/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
