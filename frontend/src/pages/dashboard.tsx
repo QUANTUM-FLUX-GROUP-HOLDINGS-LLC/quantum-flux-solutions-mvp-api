@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { UploadCard } from '../components/UploadCard';
+import { DisputeTracker } from '../components/DisputeTracker';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -51,9 +52,9 @@ export default function Dashboard() {
           <div className="text-sm text-gray-600">{user?.email || 'User'}</div>
         </header>
 
-        <main className="p-8 max-w-5xl mx-auto space-y-8">
+        <main className="p-8 max-w-5xl mx-auto space-y-6 pb-20">
           {/* Welcome Banner */}
-          <div className="bg-white p-6 rounded-lg shadow-sm flex justify-between items-center">
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-bold text-gray-800">Welcome back, {user?.name || 'User'}</h2>
               <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
@@ -66,12 +67,12 @@ export default function Dashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Credit Repair Card */}
-            <div className="bg-white p-6 rounded-lg shadow-sm">
+            {/* Credit Repair Card (Upload) */}
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
               <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-2">
-                <span className="text-[#4a90e2]">💳</span> Credit Repair
+                <span className="text-[#4a90e2]">💳</span> Credit Reports
               </h3>
-              <p className="text-sm text-gray-500 mb-6">Upload your credit reports to start the audit and dispute process.</p>
+              <p className="text-sm text-gray-500 mb-6">Upload your credit reports to start the audit process.</p>
               
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
                 <UploadCard token={token} />
@@ -79,7 +80,7 @@ export default function Dashboard() {
             </div>
 
             {/* Tax Preparation Card */}
-            <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
               <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-2">
                 <span className="text-[#4a90e2]">📄</span> Tax Preparation
               </h3>
@@ -96,6 +97,10 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+
+          {/* NUEVO: Componente del Rastreador de Disputas */}
+          <DisputeTracker token={token} />
+
         </main>
       </div>
     </div>
