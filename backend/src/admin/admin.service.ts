@@ -45,14 +45,20 @@ export class AdminService {
     return this.prisma.dispute.update({ where: { id }, data: { status } });
   }
 
-  // NUEVO MÉTODO: Crear disputa como Admin
   async createDisputeForCustomer(customerId: string, data: { bureau: string, accountName: string, accountNumber?: string }) {
     return this.prisma.dispute.create({
       data: {
         ...data,
         customerId,
-        status: 'SENT', // Lo ponemos en SENT automáticamente para que el cliente ya pueda verla
+        status: 'PENDING', // Se crea en pending para que el admin luego lo apruebe
       },
+    });
+  }
+
+  // OPCIÓN 3: Obtener el perfil de impuestos del cliente
+  async getCustomerTaxProfile(customerId: string) {
+    return this.prisma.taxProfile.findUnique({
+      where: { customerId },
     });
   }
 }

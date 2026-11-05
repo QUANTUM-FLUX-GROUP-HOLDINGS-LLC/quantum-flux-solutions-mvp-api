@@ -21,6 +21,12 @@ export class AdminController {
     return this.admin.listDocuments(id);
   }
 
+  @Get('documents/:id/download')
+  @Roles('ADMIN', 'CREDIT_REPAIR', 'TAX_PERSONAL', 'TAX_BUSINESS', 'BOOKKEEPING')
+  downloadDocument(@Param('id') id: string) {
+    return this.admin.createSignedUrl(id);
+  }
+
   @Get('disputes')
   @Roles('ADMIN', 'CREDIT_REPAIR')
   listDisputes() {
@@ -37,5 +43,12 @@ export class AdminController {
   @Roles('ADMIN', 'CREDIT_REPAIR')
   createDisputeForCustomer(@Param('id') id: string, @Body() body: any) {
     return this.admin.createDisputeForCustomer(id, body);
+  }
+
+  // OPCIÓN 3: Ruta para obtener el perfil de Taxes del cliente
+  @Get('customers/:id/tax')
+  @Roles('ADMIN', 'TAX_PERSONAL', 'TAX_BUSINESS')
+  getCustomerTaxProfile(@Param('id') id: string) {
+    return this.admin.getCustomerTaxProfile(id);
   }
 }
