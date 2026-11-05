@@ -14,7 +14,7 @@ export class MailService {
   async sendWelcomeEmail(to: string, name: string) {
     try {
       await this.resend.emails.send({
-        from: 'Quantum Flux <onboarding@resend.dev>', // Dominio de pruebas de Resend
+        from: 'Quantum Flux <support@quantumfluxsolutions.com>', // Dominio de pruebas de Resend
         to: [to],
         subject: 'Welcome to Quantum Flux Solutions!',
         html: `
@@ -35,7 +35,7 @@ export class MailService {
   async sendPaymentSuccessEmail(to: string, name: string) {
     try {
       await this.resend.emails.send({
-        from: 'Quantum Flux <billing@resend.dev>',
+        from: 'Quantum Flux <support@quantumfluxsolutions.com>',
         to: [to],
         subject: 'Payment Confirmed - Quantum Flux Solutions',
         html: `
