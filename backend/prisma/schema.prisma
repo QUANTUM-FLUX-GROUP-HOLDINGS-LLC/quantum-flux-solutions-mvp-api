@@ -9,17 +9,17 @@ datasource db {
 }
 
 model Customer {
-  id        String     @id @default(uuid())
-  email     String     @unique
-  name      String
-  password  String?
-  stripeId  String?    @unique
-  status    String     @default("PENDING")
-  isAdmin   Boolean    @default(false)
-  createdAt DateTime   @default(now())
-  documents Document[]
-  taxProfile  TaxProfile?
-  disputes    Dispute[]
+  id         String      @id @default(uuid())
+  email      String      @unique
+  name       String
+  password   String?
+  stripeId   String?     @unique
+  status     String      @default("PENDING")
+  role       String      @default("CLIENT")
+  createdAt  DateTime    @default(now())
+  documents  Document[]
+  disputes   Dispute[]
+  taxProfile TaxProfile?
 }
 
 model Document {
@@ -47,10 +47,10 @@ model Dispute {
   id            String   @id @default(uuid())
   customerId    String
   customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  bureau        String   // Equifax, Experian, TransUnion
+  bureau        String
   accountName   String
   accountNumber String?
-  status        String   @default("PENDING") // PENDING, SENT, IN_REVIEW, DELETED
+  status        String   @default("PENDING")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
