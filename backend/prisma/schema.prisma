@@ -3,17 +3,39 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
 model Customer {
-  id        String   @id @default(uuid())
-  email     String   @unique
+  id        String     @id @default(uuid())
+  email     String     @unique
   name      String
-  password  String?  // <-- Nuevo campo para autenticación
-  stripeId  String?  @unique
-  status    String   @default("PENDING")
-  createdAt DateTime @default(now())
+  password  String?
+  stripeId  String?    @unique
+  status    String     @default("PENDING")
+  createdAt DateTime   @default(now())
+  documents Document[]
+}
+
+model Document {
+  id          String           @id @default(uuid())
+  customerId  String
+  customer    Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  fileName    String
+  storagePath String           @unique
+  mimeType    String
+  sizeBytes   Int
+  category    DocumentCategory @default(CREDIT_REPORT)
+  createdAt   DateTime         @default(now())
+
+  @@index([customerId])
+}
+
+enum DocumentCategory {
+  CREDIT_REPORT
+  TAX_DOCUMENT
+  BOOKKEEPING
+  OTHER
 }

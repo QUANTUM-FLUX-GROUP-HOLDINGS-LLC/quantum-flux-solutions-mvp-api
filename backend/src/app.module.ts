@@ -3,9 +3,17 @@ import { AppController } from './app.controller';
 import { StripeModule } from './integrations/stripe/stripe.module';
 import { PrismaModule } from './core/database/prisma.module';
 import { AuthModule } from './auth/auth.module';
+import { StorageModule } from './storage/storage.module';
+import { DocumentsModule } from './documents/documents.module';
 
 @Module({
-  imports: [StripeModule, PrismaModule, AuthModule],
+  imports: [
+    StripeModule,
+    PrismaModule,
+    AuthModule,
+    StorageModule,
+    DocumentsModule,
+  ],
   controllers: [AppController],
   providers: [],
 })
