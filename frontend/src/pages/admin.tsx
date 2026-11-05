@@ -23,7 +23,7 @@ export default function AdminPage() {
     if (u) {
       const parsedUser = JSON.parse(u);
       setUser(parsedUser);
-      if (parsedUser.role === 'CLIENT') {
+      if (parsedUser.role === 'CLIENT' || !parsedUser.role) {
         router.push('/dashboard'); // Cliente no puede estar aquí
         return;
       }

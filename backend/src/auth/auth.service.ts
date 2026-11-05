@@ -1,57 +1,54 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
-import { PrismaService } from '../core/database/prisma.service';
 import { JwtService } from '@nestjs/jwt';
-import { MailService } from '../mail/mail.service';
+import { PrismaService } from '../core/database/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
-    private jwtService: JwtService,
+    private jwt: JwtService,
+    private mail: MailService,
   ) {}
 
-  async register(email: string, name: string, pass: string) {
-    const existingUser = await this.prisma.customer.findUnique({ where: { email } });
-    if (existingUser && existingUser.password) {
-      throw new ConflictException('User with this email already exists.');
-    }
+  async register(data: { email: string; password: string; name: string }) {
+    const existing = await this.prisma.customer.findUnique({ where: { email: data.email } });
+    if (existing) throw new ConflictException('Email already in use');
 
-    const hashedPassword = await bcrypt.hash(pass, 10);
-
-    if (existingUser) {
-      await this.prisma.customer.update({
-        where: { email },
-        data: { password: hashedPassword, name },
-      });
-      return this.login(email, pass);
-    }
-
-    const user = await this.prisma.customer.create({
-      data: { email, name, password: hashedPassword },
+    const hash = await bcrypt.hash(data.password, 10);
+    
+    // Todos los que se registran en la web pública son CLIENTES por defecto
+    const customer = await this.prisma.customer.create({
+      data: { email: data.email, password: hash, name: data.name, role: 'CLIENT' },
     });
 
-    return this.login(email, pass);
+    await this.mail.sendWelcomeEmail(customer.email, customer.name);
+    
+    return this.login(customer.email, data.password);
   }
 
   async login(email: string, pass: string) {
     const user = await this.prisma.customer.findUnique({ where: { email } });
     if (!user || !user.password) throw new UnauthorizedException('Invalid credentials');
 
-    const isMatch = await bcrypt.compare(pass, user.password);
-    if (!isMatch) throw new UnauthorizedException('Invalid credentials');
+    const valid = await bcrypt.compare(pass, user.password);
+    if (!valid) throw new UnauthorizedException('Invalid credentials');
 
-    const payload = { sub: user.id, email: user.email };
+    // El payload incluye el rol para que el JWT lo sepa
+    const payload = { sub: user.id, email: user.email, role: user.role };
+    const token = this.jwt.sign(payload);
+
+    // Devolvemos el token y el objeto user (que incluye el rol)
     return {
-      access_token: this.jwtService.sign(payload),
-      user: { id: user.id, name: user.name, email: user.email, status: user.status },
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        status: user.status,
+      },
     };
-  }
-
-  // NUEVO: Obtener datos frescos del usuario
-  async getMe(userId: string) {
-    const user = await this.prisma.customer.findUnique({ where: { id: userId } });
-    if (!user) throw new UnauthorizedException('User not found');
-    return { id: user.id, name: user.name, email: user.email, status: user.status };
   }
 }
