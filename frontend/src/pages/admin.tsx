@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 export default function AdminPage() {
   const router = useRouter();
   
-  // Módulos: 'GENERAL' | 'CREDIT' | 'TAX' | 'BOOKKEEPING'
+  // Módulos: 'GENERAL' | 'CREDIT' | 'TAX_PERSONAL' | 'TAX_BUSINESS' | 'BOOKKEEPING'
   const [activeModule, setActiveModule] = useState<string>('GENERAL'); 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'client_detail'>('dashboard');
   
@@ -12,14 +12,12 @@ export default function AdminPage() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [selectedClient, setSelectedClient] = useState<any | null>(null);
   
-  // Estados específicos de cada módulo
   const [documents, setDocuments] = useState<any[]>([]);
   const [disputes, setDisputes] = useState<any[]>([]);
   const [taxProfile, setTaxProfile] = useState<any>(null);
   
   const [user, setUser] = useState<any>(null);
   
-  // Formulario de disputas
   const [bureau, setBureau] = useState('Equifax');
   const [accountName, setAccountName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
@@ -40,9 +38,10 @@ export default function AdminPage() {
         return;
       }
 
-      // Configuración inicial según el rol (el Admin ve todo, los demás ven su módulo)
+      // Redirección inicial basada en el rol
       if (parsedUser.role === 'CREDIT_REPAIR') setActiveModule('CREDIT');
-      else if (parsedUser.role.startsWith('TAX')) setActiveModule('TAX');
+      else if (parsedUser.role === 'TAX_PERSONAL') setActiveModule('TAX_PERSONAL');
+      else if (parsedUser.role === 'TAX_BUSINESS') setActiveModule('TAX_BUSINESS');
       else if (parsedUser.role === 'BOOKKEEPING') setActiveModule('BOOKKEEPING');
       
       if (parsedUser.role !== 'ADMIN') setActiveTab('clients');
@@ -68,19 +67,16 @@ export default function AdminPage() {
     setSelectedClient(client);
     setActiveTab('client_detail');
     
-    // Limpiar estados anteriores
     setTaxProfile(null);
     setDisputes([]);
     setDocuments([]);
     
     try {
-      // Cargar documentos siempre (es útil para todos los módulos)
       const docRes = await fetch(`${API_URL}/admin/customers/${client.id}/documents`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (docRes.ok) setDocuments(await docRes.json());
 
-      // Cargar Disputas SOLO si estamos en el módulo de Crédito o General (Admin)
       if (activeModule === 'CREDIT' || (activeModule === 'GENERAL' && user?.role === 'ADMIN')) {
         const dispRes = await fetch(`${API_URL}/admin/disputes`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -91,8 +87,8 @@ export default function AdminPage() {
         }
       }
 
-      // Cargar Taxes SOLO si estamos en el módulo de Taxes o General (Admin)
-      if (activeModule === 'TAX' || (activeModule === 'GENERAL' && user?.role === 'ADMIN')) {
+      // Cargar Taxes SOLO si estamos en el módulo correspondiente
+      if (activeModule.includes('TAX') || (activeModule === 'GENERAL' && user?.role === 'ADMIN')) {
         const taxRes = await fetch(`${API_URL}/admin/customers/${client.id}/tax`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -133,7 +129,6 @@ export default function AdminPage() {
     } catch (err: any) { alert(err.message); }
   }
 
-  // Función para cambiar de módulo
   const switchModule = (module: string) => {
     setActiveModule(module);
     setActiveTab('clients');
@@ -143,12 +138,13 @@ export default function AdminPage() {
   // Lógica estricta de visibilidad de menús
   const isAdmin = user?.role === 'ADMIN';
   const isCredit = user?.role === 'CREDIT_REPAIR';
-  const isTax = user?.role === 'TAX_PERSONAL' || user?.role === 'TAX_BUSINESS';
+  const isTaxPersonal = user?.role === 'TAX_PERSONAL';
+  const isTaxBusiness = user?.role === 'TAX_BUSINESS';
   const isBookkeeping = user?.role === 'BOOKKEEPING';
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* SIDEBAR CON MÓDULOS */}
+      {/* SIDEBAR CON MÓDULOS SEPARADOS */}
       <div className="w-64 bg-gray-900 text-white flex flex-col">
         <div className="p-6 text-xl font-bold text-red-500">Quantum Flux CRM</div>
         <div className="px-4 mb-4 text-xs font-bold text-gray-500 uppercase tracking-wide">
@@ -157,7 +153,6 @@ export default function AdminPage() {
         
         <nav className="flex-1 px-4 space-y-1">
           
-          {/* OPCIÓN GENERAL (Solo Admin) */}
           {isAdmin && (
             <button onClick={() => switchModule('GENERAL')} className={`w-full text-left px-4 py-2 rounded-md font-medium text-sm ${activeModule === 'GENERAL' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'}`}>
               General Dashboard
@@ -166,21 +161,26 @@ export default function AdminPage() {
 
           <div className="pt-4 pb-2 text-xs font-bold text-gray-500 uppercase tracking-wide px-4">Modules</div>
 
-          {/* MÓDULO DE CRÉDITO */}
           {(isAdmin || isCredit) && (
             <button onClick={() => switchModule('CREDIT')} className={`w-full text-left px-4 py-2 rounded-md font-medium text-sm ${activeModule === 'CREDIT' ? 'bg-[#0f4c81] text-white' : 'text-gray-400 hover:text-white'}`}>
               Credit Repair
             </button>
           )}
 
-          {/* MÓDULO DE IMPUESTOS */}
-          {(isAdmin || isTax) && (
-            <button onClick={() => switchModule('TAX')} className={`w-full text-left px-4 py-2 rounded-md font-medium text-sm ${activeModule === 'TAX' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}>
-              Tax Preparation
+          {/* MÓDULO TAX PERSONAL */}
+          {(isAdmin || isTaxPersonal) && (
+            <button onClick={() => switchModule('TAX_PERSONAL')} className={`w-full text-left px-4 py-2 rounded-md font-medium text-sm ${activeModule === 'TAX_PERSONAL' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+              Personal Tax Prep
             </button>
           )}
 
-          {/* MÓDULO DE CONTABILIDAD */}
+          {/* MÓDULO TAX BUSINESS */}
+          {(isAdmin || isTaxBusiness) && (
+            <button onClick={() => switchModule('TAX_BUSINESS')} className={`w-full text-left px-4 py-2 rounded-md font-medium text-sm ${activeModule === 'TAX_BUSINESS' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+              Business Tax Prep
+            </button>
+          )}
+
           {(isAdmin || isBookkeeping) && (
             <button onClick={() => switchModule('BOOKKEEPING')} className={`w-full text-left px-4 py-2 rounded-md font-medium text-sm ${activeModule === 'BOOKKEEPING' ? 'bg-green-600 text-white' : 'text-gray-400 hover:text-white'}`}>
               Bookkeeping
@@ -195,13 +195,14 @@ export default function AdminPage() {
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         
-        {/* BARRA SUPERIOR DEL MÓDULO ACTIVO */}
+        {/* BARRA SUPERIOR DEL MÓDULO */}
         <div className="bg-white border-b px-8 py-4 flex justify-between items-center shadow-sm">
           <div className="flex items-center gap-3">
             <span className="text-xl font-bold text-gray-800">
               {activeModule === 'GENERAL' ? 'General Overview' : 
                activeModule === 'CREDIT' ? 'Credit Repair Module' : 
-               activeModule === 'TAX' ? 'Tax Preparation Module' : 'Bookkeeping Module'}
+               activeModule === 'TAX_PERSONAL' ? 'Personal Tax Module' : 
+               activeModule === 'TAX_BUSINESS' ? 'Business Tax Module' : 'Bookkeeping Module'}
             </span>
             {activeTab === 'client_detail' && selectedClient && (
               <span className="text-gray-400 text-sm">/ {selectedClient.name}</span>
@@ -216,7 +217,7 @@ export default function AdminPage() {
 
         <div className="flex-1 overflow-y-auto">
           
-          {/* DASHBOARD GENERAL (Solo Admin) */}
+          {/* DASHBOARD GENERAL */}
           {activeTab === 'dashboard' && activeModule === 'GENERAL' && (
             <div className="p-10 max-w-5xl">
               <div className="grid grid-cols-3 gap-6">
@@ -236,7 +237,7 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* LISTA DE CLIENTES DEL MÓDULO */}
+          {/* LISTA DE CLIENTES */}
           {activeTab === 'clients' && (
             <div className="p-8">
               <div className="bg-white rounded-lg shadow border overflow-hidden">
@@ -264,12 +265,11 @@ export default function AdminPage() {
             </div>
           )}
 
-          {/* WORKSPACE DEL CLIENTE (Filtrado por Módulo) */}
+          {/* WORKSPACE DEL CLIENTE */}
           {activeTab === 'client_detail' && selectedClient && (
             <div className="p-8 space-y-6 max-w-5xl">
               
               <div className="grid grid-cols-2 gap-6">
-                {/* 1. DOCUMENTOS (Siempre visible) */}
                 <div className="bg-white p-6 rounded-lg shadow-sm border">
                   <h3 className="font-bold mb-4 text-gray-800">Client Documents</h3>
                   {documents.length === 0 ? <p className="text-sm text-gray-500">No docs uploaded.</p> : (
@@ -281,10 +281,12 @@ export default function AdminPage() {
                   )}
                 </div>
 
-                {/* 2. TAX MODULE (Solo si el módulo es Tax o General) */}
-                {(activeModule === 'TAX' || activeModule === 'GENERAL') && (
-                  <div className="bg-white p-6 rounded-lg shadow-sm border border-blue-200 bg-blue-50/30">
-                    <h3 className="font-bold mb-4 text-blue-900">Tax Profile Data</h3>
+                {/* VISTA DE TAX (Se adapta si es Personal o Business) */}
+                {(activeModule === 'TAX_PERSONAL' || activeModule === 'TAX_BUSINESS' || activeModule === 'GENERAL') && (
+                  <div className={`bg-white p-6 rounded-lg shadow-sm border ${activeModule === 'TAX_BUSINESS' ? 'border-indigo-200 bg-indigo-50/30' : 'border-blue-200 bg-blue-50/30'}`}>
+                    <h3 className={`font-bold mb-4 ${activeModule === 'TAX_BUSINESS' ? 'text-indigo-900' : 'text-blue-900'}`}>
+                      {activeModule === 'TAX_BUSINESS' ? 'Business Tax Data' : activeModule === 'TAX_PERSONAL' ? 'Personal Tax Data' : 'Tax Profile Data'}
+                    </h3>
                     {!taxProfile ? <p className="text-sm text-gray-500">Client has not filled out tax info yet.</p> : (
                       <div className="text-sm space-y-2">
                         <p><strong>Filing Status:</strong> {taxProfile.filingStatus}</p>
@@ -295,7 +297,6 @@ export default function AdminPage() {
                   </div>
                 )}
 
-                {/* 3. BOOKKEEPING MODULE (Solo si el módulo es Bookkeeping o General) */}
                 {(activeModule === 'BOOKKEEPING' || activeModule === 'GENERAL') && (
                   <div className="bg-white p-6 rounded-lg shadow-sm border border-green-200 bg-green-50/30">
                     <h3 className="font-bold mb-2 text-green-900">Bookkeeping Files</h3>
@@ -304,7 +305,7 @@ export default function AdminPage() {
                 )}
               </div>
 
-              {/* 4. CREDIT DISPUTES (Solo si el módulo es Credit o General) */}
+              {/* DISPUTAS DE CRÉDITO */}
               {(activeModule === 'CREDIT' || activeModule === 'GENERAL') && (
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-yellow-200 bg-yellow-50/30">
                   <h3 className="font-bold mb-4 text-yellow-900">Credit Disputes</h3>
