@@ -3,17 +3,23 @@ import { useRouter } from 'next/router';
 
 export default function AdminPage() {
   const router = useRouter();
-  // Definimos pestañas estrictas
-  const [activeTab, setActiveTab] = useState<string>('');
-  const [metrics, setMetrics] = useState<any>(null);
   
+  // Módulos: 'GENERAL' | 'CREDIT' | 'TAX' | 'BOOKKEEPING'
+  const [activeModule, setActiveModule] = useState<string>('GENERAL'); 
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'client_detail'>('dashboard');
+  
+  const [metrics, setMetrics] = useState<any>(null);
   const [customers, setCustomers] = useState<any[]>([]);
   const [selectedClient, setSelectedClient] = useState<any | null>(null);
+  
+  // Estados específicos de cada módulo
   const [documents, setDocuments] = useState<any[]>([]);
   const [disputes, setDisputes] = useState<any[]>([]);
   const [taxProfile, setTaxProfile] = useState<any>(null);
+  
   const [user, setUser] = useState<any>(null);
   
+  // Formulario de disputas
   const [bureau, setBureau] = useState('Equifax');
   const [accountName, setAccountName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
@@ -29,19 +35,17 @@ export default function AdminPage() {
       const parsedUser = JSON.parse(u);
       setUser(parsedUser);
       
-      // SEGURIDAD DE RUTA: Si es un cliente, no entra aquí.
       if (parsedUser.role === 'CLIENT' || !parsedUser.role) {
         router.push('/dashboard');
         return;
       }
+
+      // Configuración inicial según el rol (el Admin ve todo, los demás ven su módulo)
+      if (parsedUser.role === 'CREDIT_REPAIR') setActiveModule('CREDIT');
+      else if (parsedUser.role.startsWith('TAX')) setActiveModule('TAX');
+      else if (parsedUser.role === 'BOOKKEEPING') setActiveModule('BOOKKEEPING');
       
-      // REDIRECCIÓN INICIAL SEGÚN ROL
-      // Admin ve el Dashboard General. Los demás ven su lista de clientes por defecto.
-      if (parsedUser.role === 'ADMIN') {
-        setActiveTab('dashboard');
-      } else {
-        setActiveTab('clients');
-      }
+      if (parsedUser.role !== 'ADMIN') setActiveTab('clients');
     }
     fetchData();
   }, [token]);
@@ -63,17 +67,21 @@ export default function AdminPage() {
   async function loadClientWorkspace(client: any) {
     setSelectedClient(client);
     setActiveTab('client_detail');
+    
+    // Limpiar estados anteriores
     setTaxProfile(null);
     setDisputes([]);
     setDocuments([]);
     
     try {
+      // Cargar documentos siempre (es útil para todos los módulos)
       const docRes = await fetch(`${API_URL}/admin/customers/${client.id}/documents`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (docRes.ok) setDocuments(await docRes.json());
 
-      if (user?.role === 'ADMIN' || user?.role === 'CREDIT_REPAIR') {
+      // Cargar Disputas SOLO si estamos en el módulo de Crédito o General (Admin)
+      if (activeModule === 'CREDIT' || (activeModule === 'GENERAL' && user?.role === 'ADMIN')) {
         const dispRes = await fetch(`${API_URL}/admin/disputes`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -83,7 +91,8 @@ export default function AdminPage() {
         }
       }
 
-      if (user?.role === 'ADMIN' || user?.role === 'TAX_PERSONAL' || user?.role === 'TAX_BUSINESS') {
+      // Cargar Taxes SOLO si estamos en el módulo de Taxes o General (Admin)
+      if (activeModule === 'TAX' || (activeModule === 'GENERAL' && user?.role === 'ADMIN')) {
         const taxRes = await fetch(`${API_URL}/admin/customers/${client.id}/tax`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -108,7 +117,6 @@ export default function AdminPage() {
       alert("Dispute created!");
       setAccountName(""); setAccountNumber("");
       loadClientWorkspace(selectedClient);
-      fetchData();
     } catch (err: any) { alert(err.message); }
   }
 
@@ -125,37 +133,59 @@ export default function AdminPage() {
     } catch (err: any) { alert(err.message); }
   }
 
+  // Función para cambiar de módulo
+  const switchModule = (module: string) => {
+    setActiveModule(module);
+    setActiveTab('clients');
+    setSelectedClient(null);
+  };
+
+  // Lógica estricta de visibilidad de menús
   const isAdmin = user?.role === 'ADMIN';
   const isCredit = user?.role === 'CREDIT_REPAIR';
   const isTax = user?.role === 'TAX_PERSONAL' || user?.role === 'TAX_BUSINESS';
   const isBookkeeping = user?.role === 'BOOKKEEPING';
 
-  if (!user || !activeTab) return <div className="p-10">Cargando sistema...</div>;
-
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* SIDEBAR DINÁMICO */}
+      {/* SIDEBAR CON MÓDULOS */}
       <div className="w-64 bg-gray-900 text-white flex flex-col">
         <div className="p-6 text-xl font-bold text-red-500">Quantum Flux CRM</div>
         <div className="px-4 mb-4 text-xs font-bold text-gray-500 uppercase tracking-wide">
-          Role: <span className="text-white">{user?.role}</span>
+          Logged: <span className="text-white">{user?.role}</span>
         </div>
         
-        <nav className="flex-1 px-4 space-y-2">
-          {/* Solo el Admin ve el Dashboard general */}
-          {isAdmin && (
-            <button onClick={() => setActiveTab('dashboard')} className={`w-full text-left px-4 py-2 rounded-md font-medium text-sm ${activeTab === 'dashboard' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'}`}>Dashboard General</button>
-          )}
+        <nav className="flex-1 px-4 space-y-1">
           
-          {/* Todos ven la lista de clientes, pero con títulos distintos */}
-          <button onClick={() => { setActiveTab('clients'); setSelectedClient(null); }} className={`w-full text-left px-4 py-2 rounded-md font-medium text-sm ${activeTab === 'clients' || activeTab === 'client_detail' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'}`}>
-            {isAdmin ? 'All Clients' : isCredit ? 'My Credit Clients' : isTax ? 'My Tax Clients' : 'My Bookkeeping Clients'}
-          </button>
+          {/* OPCIÓN GENERAL (Solo Admin) */}
+          {isAdmin && (
+            <button onClick={() => switchModule('GENERAL')} className={`w-full text-left px-4 py-2 rounded-md font-medium text-sm ${activeModule === 'GENERAL' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'}`}>
+              General Dashboard
+            </button>
+          )}
 
-          {/* Módulos específicos (Visuales por ahora, bloqueados a nivel de backend) */}
-          {isCredit && <div className="px-4 py-2 mt-4 text-xs font-bold text-yellow-500 uppercase">Credit Module</div>}
-          {isTax && <div className="px-4 py-2 mt-4 text-xs font-bold text-blue-500 uppercase">Tax Module</div>}
-          {isBookkeeping && <div className="px-4 py-2 mt-4 text-xs font-bold text-green-500 uppercase">Bookkeeping Module</div>}
+          <div className="pt-4 pb-2 text-xs font-bold text-gray-500 uppercase tracking-wide px-4">Modules</div>
+
+          {/* MÓDULO DE CRÉDITO */}
+          {(isAdmin || isCredit) && (
+            <button onClick={() => switchModule('CREDIT')} className={`w-full text-left px-4 py-2 rounded-md font-medium text-sm ${activeModule === 'CREDIT' ? 'bg-[#0f4c81] text-white' : 'text-gray-400 hover:text-white'}`}>
+              Credit Repair
+            </button>
+          )}
+
+          {/* MÓDULO DE IMPUESTOS */}
+          {(isAdmin || isTax) && (
+            <button onClick={() => switchModule('TAX')} className={`w-full text-left px-4 py-2 rounded-md font-medium text-sm ${activeModule === 'TAX' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+              Tax Preparation
+            </button>
+          )}
+
+          {/* MÓDULO DE CONTABILIDAD */}
+          {(isAdmin || isBookkeeping) && (
+            <button onClick={() => switchModule('BOOKKEEPING')} className={`w-full text-left px-4 py-2 rounded-md font-medium text-sm ${activeModule === 'BOOKKEEPING' ? 'bg-green-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+              Bookkeeping
+            </button>
+          )}
         </nav>
         
         <div className="p-4 border-t border-gray-700">
@@ -163,78 +193,86 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* VISTA 1: DASHBOARD GENERAL (SOLO ADMIN) */}
-        {activeTab === 'dashboard' && isAdmin && (
-          <div className="p-10 w-full max-w-5xl">
-            <h1 className="text-3xl font-bold text-gray-800 mb-8">Command Center</h1>
-            <div className="grid grid-cols-3 gap-6">
-              <div className="bg-white p-6 rounded-lg shadow border-t-4 border-blue-500">
-                <p className="text-sm text-gray-500 font-medium">Total Clients</p>
-                <p className="text-4xl font-bold text-gray-800">{metrics?.totalClients || 0}</p>
-              </div>
-              <div className="bg-white p-6 rounded-lg shadow border-t-4 border-yellow-500">
-                <p className="text-sm text-gray-500 font-medium">Pending Disputes</p>
-                <p className="text-4xl font-bold text-gray-800">{metrics?.activeDisputes || 0}</p>
-              </div>
-              <div className="bg-white p-6 rounded-lg shadow border-t-4 border-green-500">
-                <p className="text-sm text-gray-500 font-medium">Documents Stored</p>
-                <p className="text-4xl font-bold text-gray-800">{metrics?.totalDocs || 0}</p>
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        
+        {/* BARRA SUPERIOR DEL MÓDULO ACTIVO */}
+        <div className="bg-white border-b px-8 py-4 flex justify-between items-center shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="text-xl font-bold text-gray-800">
+              {activeModule === 'GENERAL' ? 'General Overview' : 
+               activeModule === 'CREDIT' ? 'Credit Repair Module' : 
+               activeModule === 'TAX' ? 'Tax Preparation Module' : 'Bookkeeping Module'}
+            </span>
+            {activeTab === 'client_detail' && selectedClient && (
+              <span className="text-gray-400 text-sm">/ {selectedClient.name}</span>
+            )}
+          </div>
+          {activeTab === 'client_detail' && (
+             <button onClick={() => { setActiveTab('clients'); setSelectedClient(null); }} className="text-sm text-blue-600 font-medium hover:underline">
+               &larr; Back to Client List
+             </button>
+          )}
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          
+          {/* DASHBOARD GENERAL (Solo Admin) */}
+          {activeTab === 'dashboard' && activeModule === 'GENERAL' && (
+            <div className="p-10 max-w-5xl">
+              <div className="grid grid-cols-3 gap-6">
+                <div className="bg-white p-6 rounded-lg shadow-sm border-t-4 border-gray-800">
+                  <p className="text-sm text-gray-500 font-medium">Total Clients</p>
+                  <p className="text-4xl font-bold text-gray-800">{metrics?.totalClients || 0}</p>
+                </div>
+                <div className="bg-white p-6 rounded-lg shadow-sm border-t-4 border-yellow-500">
+                  <p className="text-sm text-gray-500 font-medium">Pending Disputes</p>
+                  <p className="text-4xl font-bold text-gray-800">{metrics?.activeDisputes || 0}</p>
+                </div>
+                <div className="bg-white p-6 rounded-lg shadow-sm border-t-4 border-green-500">
+                  <p className="text-sm text-gray-500 font-medium">Documents Stored</p>
+                  <p className="text-4xl font-bold text-gray-800">{metrics?.totalDocs || 0}</p>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* VISTA 2: LISTA DE CLIENTES */}
-        {activeTab === 'clients' && (
-          <div className="w-full p-10">
-            <h1 className="text-2xl font-bold text-gray-800 mb-6">Client Directory</h1>
-            <div className="bg-white rounded-lg shadow border overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {customers.map((c) => (
-                    <tr key={c.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{c.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{c.email}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                        <button onClick={() => loadClientWorkspace(c)} className="text-blue-600 hover:underline">Open Workspace</button>
-                      </td>
+          {/* LISTA DE CLIENTES DEL MÓDULO */}
+          {activeTab === 'clients' && (
+            <div className="p-8">
+              <div className="bg-white rounded-lg shadow border overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {customers.map((c) => (
+                      <tr key={c.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{c.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{c.email}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                          <button onClick={() => loadClientWorkspace(c)} className="text-blue-600 hover:underline">Open {activeModule} Workspace</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* VISTA 3: DETALLE DEL CLIENTE (WORKSPACE) */}
-        {activeTab === 'client_detail' && selectedClient && (
-          <div className="w-full flex">
-            {/* Botón para volver a la lista */}
-            <div className="w-64 border-r bg-gray-100 p-4">
-               <button onClick={() => setActiveTab('clients')} className="text-sm text-blue-600 font-medium hover:underline flex items-center gap-2">
-                 &larr; Back to Client List
-               </button>
-               <div className="mt-8">
-                  <h3 className="font-bold text-gray-800 text-lg">{selectedClient.name}</h3>
-                  <p className="text-sm text-gray-500">{selectedClient.email}</p>
-               </div>
-            </div>
-
-            {/* Contenido del Workspace */}
-            <div className="flex-1 p-8 h-screen overflow-y-auto space-y-6">
+          {/* WORKSPACE DEL CLIENTE (Filtrado por Módulo) */}
+          {activeTab === 'client_detail' && selectedClient && (
+            <div className="p-8 space-y-6 max-w-5xl">
               
               <div className="grid grid-cols-2 gap-6">
+                {/* 1. DOCUMENTOS (Siempre visible) */}
                 <div className="bg-white p-6 rounded-lg shadow-sm border">
-                  <h3 className="font-bold mb-4 text-gray-800">Documents</h3>
-                  {documents.length === 0 ? <p className="text-sm text-gray-500">No docs.</p> : (
+                  <h3 className="font-bold mb-4 text-gray-800">Client Documents</h3>
+                  {documents.length === 0 ? <p className="text-sm text-gray-500">No docs uploaded.</p> : (
                     <ul className="space-y-2">
                       {documents.map(d => (
                         <li key={d.id} className="text-sm border p-2 rounded">{d.fileName}</li>
@@ -243,30 +281,33 @@ export default function AdminPage() {
                   )}
                 </div>
 
-                {isTax || isAdmin ? (
-                  <div className="bg-white p-6 rounded-lg shadow-sm border">
-                    <h3 className="font-bold mb-4 text-gray-800">Tax Profile</h3>
-                    {!taxProfile ? <p className="text-sm text-gray-500">Not filled.</p> : (
+                {/* 2. TAX MODULE (Solo si el módulo es Tax o General) */}
+                {(activeModule === 'TAX' || activeModule === 'GENERAL') && (
+                  <div className="bg-white p-6 rounded-lg shadow-sm border border-blue-200 bg-blue-50/30">
+                    <h3 className="font-bold mb-4 text-blue-900">Tax Profile Data</h3>
+                    {!taxProfile ? <p className="text-sm text-gray-500">Client has not filled out tax info yet.</p> : (
                       <div className="text-sm space-y-2">
-                        <p><strong>Status:</strong> {taxProfile.filingStatus}</p>
-                        <p><strong>Income:</strong> ${taxProfile.income}</p>
+                        <p><strong>Filing Status:</strong> {taxProfile.filingStatus}</p>
+                        <p><strong>Dependents:</strong> {taxProfile.dependents}</p>
+                        <p><strong>Annual Income:</strong> ${taxProfile.income}</p>
                       </div>
                     )}
                   </div>
-                ) : null}
+                )}
 
-                {isBookkeeping || isAdmin ? (
-                  <div className="bg-white p-6 rounded-lg shadow-sm border border-dashed text-center">
-                    <h3 className="font-bold mb-2 text-gray-800">Bookkeeping</h3>
-                    <p className="text-sm text-gray-500">No statements uploaded.</p>
+                {/* 3. BOOKKEEPING MODULE (Solo si el módulo es Bookkeeping o General) */}
+                {(activeModule === 'BOOKKEEPING' || activeModule === 'GENERAL') && (
+                  <div className="bg-white p-6 rounded-lg shadow-sm border border-green-200 bg-green-50/30">
+                    <h3 className="font-bold mb-2 text-green-900">Bookkeeping Files</h3>
+                    <p className="text-sm text-gray-500">No bank statements uploaded for this client.</p>
                   </div>
-                ) : null}
+                )}
               </div>
 
-              {/* Disputas de Crédito */}
-              {(isCredit || isAdmin) && (
-                <div className="bg-white p-6 rounded-lg shadow-sm border">
-                  <h3 className="font-bold mb-4 text-gray-800">Credit Disputes</h3>
+              {/* 4. CREDIT DISPUTES (Solo si el módulo es Credit o General) */}
+              {(activeModule === 'CREDIT' || activeModule === 'GENERAL') && (
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-yellow-200 bg-yellow-50/30">
+                  <h3 className="font-bold mb-4 text-yellow-900">Credit Disputes</h3>
                   <form onSubmit={handleCreateDispute} className="flex gap-2 mb-4">
                     <select value={bureau} onChange={e => setBureau(e.target.value)} className="border p-2 rounded text-sm w-1/4">
                       <option>Equifax</option><option>Experian</option><option>TransUnion</option> 
@@ -277,7 +318,7 @@ export default function AdminPage() {
                   
                   <ul className="space-y-2">
                     {disputes.map(d => (
-                      <li key={d.id} className="flex justify-between items-center text-sm border p-2 rounded">
+                      <li key={d.id} className="flex justify-between items-center text-sm border p-2 rounded bg-white">
                         <span>{d.bureau} - {d.accountName}</span>
                         <div className="flex gap-2 items-center">
                           <span className="text-xs bg-yellow-100 px-2 py-1 rounded">{d.status}</span>
@@ -288,9 +329,10 @@ export default function AdminPage() {
                   </ul>
                 </div>
               )}
+              
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
