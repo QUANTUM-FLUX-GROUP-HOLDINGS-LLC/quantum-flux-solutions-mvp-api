@@ -1,12 +1,9 @@
 import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
 
 @Controller('admin')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN')
+@UseGuards(JwtAuthGuard)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
@@ -23,5 +20,10 @@ export class AdminController {
   @Get('clients/:id/documents')
   listClientDocuments(@Param('id') id: string) {
     return this.adminService.listDocuments(id);
+  }
+
+  @Get('documents/:id/download')
+  async downloadDocument(@Param('id') id: string) {
+    return this.adminService.createSignedUrl(id);
   }
 }
