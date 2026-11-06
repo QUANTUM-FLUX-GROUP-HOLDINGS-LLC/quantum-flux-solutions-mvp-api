@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { apiDownload } from '../../shared/api';
+import { CheckCircle } from 'lucide-react';
 import styles from './tax-business.module.css';
 
 export const BusinessForm = ({ client, formData, setFormData, onSave, saving }: any) => {
-  // Tracks whether the current session has saved at least once.
-  // Assumption: `onSave` performs the PUT. On success we flip this flag.
-  // If the parent later exposes a `saved` prop, prefer that as source of truth.
   const [hasSaved, setHasSaved] = useState(false);
 
   if (!client) {
@@ -21,7 +19,7 @@ export const BusinessForm = ({ client, formData, setFormData, onSave, saving }: 
     try {
       await Promise.resolve(onSave?.());
       setHasSaved(true);
-      toast.success('Business profile saved.');
+      toast.success('Business profile saved successfully.');
     } catch (e) {
       setHasSaved(false);
       toast.error((e as Error)?.message || 'Save failed.');
@@ -47,9 +45,14 @@ export const BusinessForm = ({ client, formData, setFormData, onSave, saving }: 
         <button
           onClick={handleDownload}
           disabled={!hasSaved}
-          className="bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700 transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          className={`px-4 py-2 rounded shadow transition text-sm flex items-center gap-2 ${
+            hasSaved 
+              ? 'bg-green-600 text-white hover:bg-green-700' 
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
         >
-          Download PDF
+          {hasSaved && <CheckCircle className="w-4 h-4" />}
+          {hasSaved ? 'Download PDF' : 'Save to enable PDF'}
         </button>
       </div>
 
@@ -94,10 +97,18 @@ export const BusinessForm = ({ client, formData, setFormData, onSave, saving }: 
           <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase">Internal Notes</label>
           <textarea value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} rows={3} className="w-full border border-gray-300 rounded-md p-2 text-sm bg-gray-50" placeholder="Add any additional notes here..."></textarea>
         </div>
-        <button onClick={handleSave} disabled={saving} className={styles.saveButton}>{saving ? 'Saving...' : 'Save Business Profile'}</button>
+        
+        <div className="mt-6 flex items-center gap-4">
+          <button onClick={handleSave} disabled={saving} className={styles.saveButton}>
+            {saving ? 'Saving...' : 'Save Business Profile'}
+          </button>
+          {hasSaved && (
+            <span className="text-sm text-green-600 flex items-center gap-1 font-medium">
+              <CheckCircle className="w-4 h-4" /> Saved successfully
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
 };
-
-export default BusinessForm;
