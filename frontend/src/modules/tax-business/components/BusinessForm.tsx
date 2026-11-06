@@ -1,3 +1,4 @@
+import { apiDownload } from '../../shared/api';
 import styles from './tax-business.module.css';
 export const BusinessForm = ({ client, formData, setFormData, onSave, saving }: any) => {
   if (!client) return <div className="h-full flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 rounded-lg">Select a corporate client from the list on the left.</div>;
@@ -6,7 +7,7 @@ export const BusinessForm = ({ client, formData, setFormData, onSave, saving }: 
     <div className="flex-1 bg-white rounded-lg shadow-lg p-6 overflow-y-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">{client.name}'s Corporate Workspace</h1>
-        <button onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_URL || 'https://quantum-flux-api-npru.onrender.com'}/tax-business/${client.id}/pdf`, "_blank")} className="bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700 transition text-sm">Download PDF</button>
+        <button onClick={() => apiDownload(`/tax-business/${client.id}/pdf`, `tax-profile-${client.id}.pdf`).catch((e) => alert(e.message))} className="bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700 transition text-sm">Download PDF</button>
       </div>
       
       <div className="border border-gray-200 rounded-lg p-6">
