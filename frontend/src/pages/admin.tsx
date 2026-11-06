@@ -78,7 +78,7 @@ export default function AdminPage() {
       if (docRes.ok) setDocuments(await docRes.json());
 
       if (activeModule === 'CREDIT' || (activeModule === 'GENERAL' && user?.role === 'ADMIN')) {
-        const dispRes = await fetch(`${API_URL}/admin/disputes`, {
+        const dispRes = await fetch(`${API_URL}/credit/disputes`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (dispRes.ok) {
@@ -104,7 +104,7 @@ export default function AdminPage() {
     e.preventDefault();
     if (!selectedClient) return;
     try {
-      const res = await fetch(`${API_URL}/admin/customers/${selectedClient.id}/disputes`, {
+      const res = await fetch(`${API_URL}/credit/customers/${selectedClient.id}/disputes`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ bureau, accountName, accountNumber }),
@@ -118,7 +118,7 @@ export default function AdminPage() {
 
   async function approveDispute(disputeId: string) {
     try {
-      const res = await fetch(`${API_URL}/admin/disputes/${disputeId}`, {
+      const res = await fetch(`${API_URL}/credit/disputes/${disputeId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status: 'SENT' }),

@@ -7,7 +7,7 @@ import { StorageModule } from './storage/storage.module';
 import { DocumentsModule } from './documents/documents.module';
 import { AdminModule } from './admin/admin.module';
 import { MailModule } from './mail/mail.module';
-import { DisputesModule } from './disputes/disputes.module';
+import { CreditModule } from './credit/credit.module';
 import { TaxModule } from './tax/tax.module';
 
 @Module({
@@ -19,7 +19,7 @@ import { TaxModule } from './tax/tax.module';
     DocumentsModule,
     AdminModule,
     MailModule,
-    DisputesModule,
+    CreditModule,
     TaxModule, // <-- Aquí está de vuelta
   ],
   controllers: [AppController],

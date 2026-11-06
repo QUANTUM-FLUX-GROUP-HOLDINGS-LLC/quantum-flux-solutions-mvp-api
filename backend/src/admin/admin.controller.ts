@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards, Patch, Body, Post } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -21,25 +21,11 @@ export class AdminController {
   @Roles('ADMIN', 'CREDIT_REPAIR', 'TAX_PERSONAL', 'TAX_BUSINESS', 'BOOKKEEPING')
   listDocuments(@Param('id') id: string) { return this.admin.listDocuments(id); }
 
-  @Get('disputes')
-  @Roles('ADMIN', 'CREDIT_REPAIR')
-  listDisputes() { return this.admin.listAllDisputes(); }
-
-  @Patch('disputes/:id')
-  @Roles('ADMIN', 'CREDIT_REPAIR')
-  updateDispute(@Param('id') id: string, @Body('status') status: string) {
-    return this.admin.updateDisputeStatus(id, status);
-  }
-
-  @Post('customers/:id/disputes')
-  @Roles('ADMIN', 'CREDIT_REPAIR')
-  createDisputeForCustomer(@Param('id') id: string, @Body() body: any) {
-    return this.admin.createDisputeForCustomer(id, body);
-  }
+  @Get('documents/:id/download')
+  @Roles('ADMIN', 'CREDIT_REPAIR', 'TAX_PERSONAL', 'TAX_BUSINESS', 'BOOKKEEPING')
+  downloadDocument(@Param('id') id: string) { return this.admin.createSignedUrl(id); }
 
   @Get('customers/:id/tax')
   @Roles('ADMIN', 'TAX_PERSONAL', 'TAX_BUSINESS')
-  getCustomerTaxProfile(@Param('id') id: string) {
-    return this.admin.getCustomerTaxProfile(id);
-  }
+  getCustomerTaxProfile(@Param('id') id: string) { return this.admin.getCustomerTaxProfile(id); }
 }
