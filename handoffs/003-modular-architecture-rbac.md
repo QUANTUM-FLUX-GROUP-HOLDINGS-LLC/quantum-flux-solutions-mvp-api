@@ -30,3 +30,6 @@
 1. **Option B (Inbox/Messaging):** Create an internal chat between Staff and Clients within the modules. (Requires a new `Message` model).
 2. **Option C (Tax PDF Generator):** Generate a downloadable PDF summary of the Tax Profile.
 3. **Option D (Stripe Live Mode):** Switch to Live keys for real payments.
+
+## 🔧 Post-Deployment Fix
+- Corrected relative import paths for `AdminLayout` in `src/pages/admin/*.tsx` from `../../../` to `../../` to match the new modular directory structure.
