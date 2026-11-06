@@ -1,4 +1,3 @@
-import { PrismaModule } from './prisma/prisma.module';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { PrismaModule } from './core/database/prisma.module';
@@ -14,7 +13,7 @@ import { MessagesModule } from './messages/messages.module';
 import { StripeModule } from './stripe/stripe.module';
 
 @Module({
-  imports: [
+  imports: [PrismaModule, 
     PrismaModule,
     AuthModule,
     StorageModule,
