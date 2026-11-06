@@ -38,6 +38,13 @@ export class CreditController {
 
   // --- RUTA PARA EL CLIENTE (Descargar PDF) ---
 
+  @Get('my-disputes')
+  @Roles('CLIENT')
+  listMyDisputes(@Req() req: any) {
+    const customerId = req.user.id || req.user.sub || req.user.userId;
+    return this.credit.listMyDisputes(customerId);
+  }
+
   @Get('my-disputes/:id/pdf')
   @Roles('CLIENT')
   async downloadPdf(@Req() req: any, @Param('id') id: string, @Res() res: Response) {

@@ -53,6 +53,17 @@ export class CreditService {
     return updated;
   }
 
+  async listMyDisputes(customerId: string) {
+    return this.prisma.dispute.findMany({
+      where: { customerId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true, bureau: true, accountName: true, accountNumber: true,
+        status: true, createdAt: true, updatedAt: true,
+      },
+    });
+  }
+
   async generatePdf(disputeId: string, customerId: string) {
     const dispute = await this.prisma.dispute.findFirst({
       where: { id: disputeId, customerId },
