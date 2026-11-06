@@ -99,3 +99,5 @@ export const BusinessForm = ({ client, formData, setFormData, onSave, saving }: 
     </div>
   );
 };
+
+export default BusinessForm;
