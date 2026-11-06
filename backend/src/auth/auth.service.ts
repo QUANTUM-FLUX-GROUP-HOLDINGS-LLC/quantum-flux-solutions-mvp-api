@@ -17,14 +17,13 @@ export class AuthService {
     if (existing) throw new ConflictException('Email already in use');
 
     const hash = await bcrypt.hash(data.password, 10);
-    
-    // Todos los que se registran en la web pública son CLIENTES por defecto
+
     const customer = await this.prisma.customer.create({
       data: { email: data.email, password: hash, name: data.name, role: 'CLIENT' },
     });
 
     await this.mail.sendWelcomeEmail(customer.email, customer.name);
-    
+
     return this.login(customer.email, data.password);
   }
 
@@ -35,11 +34,9 @@ export class AuthService {
     const valid = await bcrypt.compare(pass, user.password);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
 
-    // El payload incluye el rol para que el JWT lo sepa
     const payload = { sub: user.id, email: user.email, role: user.role };
     const token = this.jwt.sign(payload);
 
-    // Devolvemos el token y el objeto user (que incluye el rol)
     return {
       token,
       user: {
@@ -48,7 +45,29 @@ export class AuthService {
         name: user.name,
         role: user.role,
         status: user.status,
+        // FIX: entitlements must reach the client on login,
+        // otherwise dashboard/PortalLayout treat every service as locked.
+        services: user.services ?? [],
       },
     };
+  }
+
+  // Fresh, sanitized profile for /auth/me.
+  // JwtStrategy already loads the full Customer, but we re-select here so the
+  // response shape is explicit and `password` never leaks to the client.
+  async getFreshUser(userId: string) {
+    const user = await this.prisma.customer.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        status: true,
+        services: true,
+      },
+    });
+    if (!user) throw new UnauthorizedException();
+    return user;
   }
 }

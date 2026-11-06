@@ -22,8 +22,9 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  getMe(@Req() req: any) {
-    // JwtStrategy ya inyecta el usuario completo (incluyendo el role)
-    return req.user;
+  async getMe(@Req() req: any) {
+    // req.user comes from JwtStrategy (full Prisma Customer). Re-select to
+    // keep the response shape explicit and never expose `password`.
+    return this.authService.getFreshUser(req.user.id);
   }
 }
