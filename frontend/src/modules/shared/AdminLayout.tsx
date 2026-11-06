@@ -80,8 +80,8 @@ export const AdminLayout = ({ children, role: propRole }: { children: React.Reac
           {/* WORKSPACE */}
           <div>
             <p className="px-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Workspace</p>
-            <NavItem href="#" icon="📚" label="Letter Library" />
-            <NavItem href="#" icon="⚙️" label="Settings" />
+            <NavItem href="/admin/letter-library" icon="📚" label="Letter Library" />
+            <NavItem href="/admin/settings" icon="⚙️" label="Settings" />
             <NavItem href="#" icon="🎧" label="Support" />
           </div>
         </div>
