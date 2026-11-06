@@ -23,7 +23,19 @@ export const BusinessForm = ({ client, formData, setFormData, onSave, saving }: 
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase">EIN (Tax ID)</label>
-            <input type="text" value={formData.ein} onChange={(e) => setFormData({...formData, ein: e.target.value})} placeholder="XX-XXXXXXX" className="w-full border border-gray-300 rounded-md p-2 text-sm bg-gray-50" />
+            <input
+            type="text"
+            placeholder="XX-XXXXXXX"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            value={formData.ein || ''}
+            onChange={(e) => {
+              // Solo números, máximo 9 dígitos
+              const raw = e.target.value.replace(/\D/g, '').slice(0, 9);
+              // Auto-formatear con guion después de los primeros 2 dígitos
+              const formatted = raw.length > 2 ? `${raw.slice(0, 2)}-${raw.slice(2)}` : raw;
+              setFormData({ ...formData, ein: formatted });
+            }}
+          />
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase">Gross Revenue ($)</label>
