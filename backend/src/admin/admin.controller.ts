@@ -1,27 +1,21 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
-import { AdminService } from './admin.service';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { PrismaService } from '../core/database/prisma.service';
 
 @Controller('admin')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class AdminController {
-  constructor(private readonly admin: AdminService) {}
+  constructor(private prisma: PrismaService) {}
 
-  @Get('metrics')
-  @Roles('ADMIN', 'CREDIT_REPAIR', 'TAX_PERSONAL', 'TAX_BUSINESS', 'BOOKKEEPING')
-  getMetrics() { return this.admin.getDashboardMetrics(); }
-
-  @Get('customers')
-  @Roles('ADMIN', 'CREDIT_REPAIR', 'TAX_PERSONAL', 'TAX_BUSINESS', 'BOOKKEEPING')
-  listCustomers() { return this.admin.listAllCustomers(); }
-
-  @Get('customers/:id/documents')
-  @Roles('ADMIN', 'CREDIT_REPAIR', 'TAX_PERSONAL', 'TAX_BUSINESS', 'BOOKKEEPING')
-  listDocuments(@Param('id') id: string) { return this.admin.listDocuments(id); }
-
-  @Get('documents/:id/download')
-  @Roles('ADMIN', 'CREDIT_REPAIR', 'TAX_PERSONAL', 'TAX_BUSINESS', 'BOOKKEEPING')
-  downloadDocument(@Param('id') id: string) { return this.admin.createSignedUrl(id); }
+  @Get('clients')
+  async getAllClients() {
+    return this.prisma.customer.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+      }
+    });
+  }
 }
