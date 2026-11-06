@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { ClientList } from './components/ClientList';
 import { BusinessForm } from './components/BusinessForm';
+import { useAuth } from '../shared/auth-context';
+
 
 export const TaxBusinessModule = () => {
+  const { user } = useAuth();
   const [clients, setClients] = useState<any[]>([]);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -12,7 +15,7 @@ export const TaxBusinessModule = () => {
   useEffect(() => {
     const fetchClients = async () => {
       try {
-        const role = localStorage.getItem('role') || 'USER';
+        const role = user?.role || 'USER';
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://quantum-flux-api-npru.onrender.com'}/admin/clients?role=${role}`);
         if (res.ok) setClients(await res.json());
       } catch (e) { console.error(e); } finally { setLoading(false); }

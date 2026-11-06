@@ -2,8 +2,11 @@ import { useState, useEffect } from 'react';
 import { CreditMetrics } from './components/CreditMetrics';
 import { ClientDirectory } from './components/ClientDirectory';
 import { NewClientModal } from './components/NewClientModal';
+import { useAuth } from '../shared/auth-context';
+
 
 export const CreditModule = () => {
+  const { user } = useAuth();
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -11,7 +14,7 @@ export const CreditModule = () => {
   const fetchClients = async () => {
     setLoading(true);
     try {
-      const role = localStorage.getItem('role') || 'USER';
+        const role = user?.role || 'USER';
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://quantum-flux-api-npru.onrender.com'}/admin/clients?role=${role}`);
       if (res.ok) {
         const data = await res.json();

@@ -2,6 +2,8 @@ import toast from 'react-hot-toast';
 import { useState, useEffect } from 'react';
 import { UploadCard } from './components/UploadCard';
 import { apiFetch, apiDownload } from '../shared/api';
+import { useAuth } from '../shared/auth-context';
+
 
 type Dispute = {
   id: string;
@@ -12,12 +14,11 @@ type Dispute = {
 };
 
 export const DashboardModule = () => {
-  const [user, setUser] = useState<any>(null);
-  const [disputes, setDisputes] = useState<Dispute[]>([]);
+  const { user } = useAuth();
+    const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
     if (storedUser) setUser(JSON.parse(storedUser));
 
     const loadData = async () => {
