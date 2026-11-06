@@ -1,55 +1,70 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AdminLayout } from '../../modules/shared/AdminLayout';
 
-export default function TaxPersonalModule() {
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [selectedClient, setSelectedClient] = useState<any | null>(null);
-  const [taxProfile, setTaxProfile] = useState<any>(null);
-  
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+export default function BookkeepingModule() {
+  const [clients, setClients] = useState<any[]>([]);
+  const [selectedClient, setSelectedClient] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_URL}/admin/customers`, { headers: { Authorization: `Bearer ${token}` }})
-      .then(res => res.json()).then(data => setCustomers(data));
+    const fetchClients = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://quantum-flux-api-npru.onrender.com'}/admin/clients`);
+        if (res.ok) {
+          const data = await res.json();
+          setClients(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        console.error("Error fetching clients:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchClients();
   }, []);
-
-  async function loadClientTax(client: any) {
-    setSelectedClient(client);
-    const res = await fetch(`${API_URL}/tax/customers/${client.id}`, { headers: { Authorization: `Bearer ${token}` }});
-    if (res.ok) setTaxProfile(await res.json());
-  }
 
   return (
     <AdminLayout>
-      <div className="flex gap-6 max-w-6xl">
-        <div className="w-1/3 bg-white border rounded-lg shadow-sm h-[80vh] overflow-y-auto">
-          <div className="p-4 border-b bg-gray-50 font-bold">Clients</div>
-          <ul>
-            {customers.map(c => (
-              <li key={c.id} onClick={() => loadClientTax(c)} className={`p-4 border-b cursor-pointer hover:bg-gray-50 ${selectedClient?.id === c.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}>
-                <p className="font-semibold text-sm">{c.name}</p>
-              </li>
-            ))}
-          </ul>
+      <div className="flex gap-6 h-[calc(100vh-8rem)]">
+        {/* Lista de Clientes */}
+        <div className="w-1/3 bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col shadow-sm">
+          <div className="p-4 border-b border-gray-100 bg-gray-50">
+            <h2 className="font-bold text-gray-800">Clients</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {loading ? (
+              <p className="p-4 text-gray-500 text-sm">Loading clients...</p>
+            ) : clients.length === 0 ? (
+              <p className="p-4 text-gray-500 text-sm">No clients found.</p>
+            ) : (
+              clients.map((client) => (
+                <div 
+                  key={client.id} 
+                  onClick={() => setSelectedClient(client)}
+                  className={`p-4 border-b border-gray-100 cursor-pointer transition ${selectedClient?.id === client.id ? 'bg-indigo-50 border-l-4 border-indigo-500' : 'hover:bg-gray-50'}`}
+                >
+                  <p className="font-medium text-gray-900">{client.name || 'Unnamed'}</p>
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
-        <div className="w-2/3 space-y-4">
+        {/* Área de Trabajo */}
+        <div className="flex-1 bg-white border border-gray-200 rounded-lg shadow-sm p-6">
           {selectedClient ? (
             <>
-              <div className="bg-white p-4 rounded-lg shadow-sm border font-bold text-lg">{selectedClient.name}'s Bookkeeping Workspace</div>
-              <div className="bg-white p-4 rounded-lg shadow-sm border border-blue-200 bg-blue-50">
-                <h3 className="font-bold mb-2 text-blue-900">Financial Statements</h3>
-                {!taxProfile ? <p className="text-sm">Not filled out yet.</p> : (
-                  <div className="text-sm space-y-2">
-                    <p><strong>Status:</strong> {taxProfile.filingStatus}</p>
-                    <p><strong>Dependents:</strong> {taxProfile.dependents}</p>
-                    <p><strong>Income:</strong> ${taxProfile.income}</p>
-                  </div>
-                )}
+              <h1 className="text-xl font-bold text-gray-900 mb-6">{selectedClient.name}'s Bookkeeping Workspace</h1>
+              <div className="border border-gray-200 rounded-lg p-6 bg-gray-50">
+                <h2 className="text-lg font-semibold text-gray-800 mb-2">Financial Statements</h2>
+                <p className="text-sm text-gray-500">Not filled out yet.</p>
               </div>
             </>
-          ) : <div className="text-gray-500">Select a client</div>}
+          ) : (
+            <div className="h-full flex items-center justify-center text-gray-400">
+              Select a client
+            </div>
+          )}
         </div>
       </div>
     </AdminLayout>
