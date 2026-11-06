@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Lock } from 'lucide-react';
 import { useAuth } from '../shared/auth-context';
+import { ChatWidget } from '../shared/ChatWidget';
 
 export const PortalLayout = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
@@ -60,6 +61,7 @@ export const PortalLayout = ({ children }: { children: React.ReactNode }) => {
       <main className="flex-1 p-8">
         <div className="max-w-5xl mx-auto">{children}</div>
       </main>
+      <ChatWidget />
     </div>
   );
 };

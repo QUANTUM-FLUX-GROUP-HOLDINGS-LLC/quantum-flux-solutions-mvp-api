@@ -23,4 +23,12 @@ export class MessagesService {
       orderBy: { createdAt: 'asc' },
     });
   }
+
+  async findSupportAgent() {
+    // Finds the first ADMIN user in the DB to act as the support agent
+    return this.prisma.customer.findFirst({
+      where: { role: 'ADMIN' },
+      select: { id: true, name: true },
+    });
+  }
 }
