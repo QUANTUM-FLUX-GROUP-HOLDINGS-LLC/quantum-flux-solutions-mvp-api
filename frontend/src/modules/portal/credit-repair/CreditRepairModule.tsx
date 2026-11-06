@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { UploadCard } from '../../dashboard/components/UploadCard';
 import { apiFetch, apiDownload } from '../../shared/api';
+import toast from 'react-hot-toast';
 
 type Dispute = { id: string; bureau: string; accountName: string; status: string; createdAt: string; };
 
@@ -42,7 +43,7 @@ export const CreditRepairModule = () => {
                   <td className="py-3 px-4 text-sm text-gray-500">{new Date(d.createdAt).toLocaleDateString()}</td>
                   <td className="py-3 px-4">
                     {d.status !== 'PENDING' && (
-                      <button onClick={() => apiDownload(`/credit/my-disputes/${d.id}/pdf`, `Dispute_${d.id}.pdf`).catch(e => alert(e.message))} className="text-indigo-600 hover:text-indigo-900 text-sm font-medium">Download Letter</button>
+                      <button onClick={() => apiDownload(`/credit/my-disputes/${d.id}/pdf`, `Dispute_${d.id}.pdf`).catch(e => toast.error(e.message))} className="text-indigo-600 hover:text-indigo-900 text-sm font-medium">Download Letter</button>
                     )}
                   </td>
                 </tr>

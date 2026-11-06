@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { apiFetch } from '../../shared/api';
+import toast from 'react-hot-toast';
 
 export const UploadCard = ({ 
   title, 
@@ -30,11 +31,12 @@ export const UploadCard = ({
         body: formData,
       });
       setStatus('success');
+      toast.success('¡Archivo subido con éxito!');
       setFile(null);
     } catch (err: any) {
       console.error(err);
       setStatus('error');
-      alert(`Error al subir: ${err.message}`);
+      toast.error(`Error al subir: ${err.message}`);
     } finally {
       setUploading(false);
     }
