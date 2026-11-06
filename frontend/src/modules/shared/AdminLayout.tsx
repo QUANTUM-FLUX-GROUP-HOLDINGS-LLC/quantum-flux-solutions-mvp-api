@@ -55,6 +55,7 @@ export const AdminLayout = ({ children, role: propRole }: { children: React.Reac
           <div>
             <p className="px-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Client Operations</p>
             <NavItem href="/admin/inbox" icon="✉️" label="Inbox" />
+            <NavItem href="/admin/clients" icon="👥" label="Clients" />
             
             {/* Mostrar módulos según el rol */}
             {(role === 'ADMIN' || role === 'CREDIT_REPAIR') && (
