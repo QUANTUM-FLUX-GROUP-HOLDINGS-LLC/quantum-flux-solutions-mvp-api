@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Lock } from 'lucide-react';
 import { useAuth } from '../shared/auth-context';
-import { ChatWidget } from '../shared/ChatWidget';
+import { ChatWidget } from '../shared/ChatWidget'; // <-- IMPORT
 
 export const PortalLayout = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
@@ -27,41 +27,25 @@ export const PortalLayout = ({ children }: { children: React.ReactNode }) => {
 
             if (isActive) {
               return (
-                <Link
-                  key={item.path}
-                  href={item.path}
-                  className={`flex items-center justify-between px-4 py-2 rounded-md text-sm font-medium ${
-                    isCurrentPath
-                      ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
+                <Link key={item.path} href={item.path} className={`flex items-center justify-between px-4 py-2 rounded-md text-sm font-medium ${isCurrentPath ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-100'}`}>
                   {item.name}
                 </Link>
               );
             }
             return (
-              <div
-                key={item.path}
-                className="flex items-center justify-between px-4 py-2 rounded-md text-sm font-medium text-gray-400 opacity-60 cursor-not-allowed"
-              >
+              <div key={item.path} className="flex items-center justify-between px-4 py-2 rounded-md text-sm font-medium text-gray-400 opacity-60 cursor-not-allowed">
                 {item.name}
                 <Lock className="w-4 h-4" />
               </div>
             );
           })}
         </nav>
-        <button
-          onClick={signOut}
-          className="mt-12 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md"
-        >
-          Sign Out
-        </button>
+        <button onClick={signOut} className="mt-12 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md">Sign Out</button>
       </aside>
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-8 relative">
         <div className="max-w-5xl mx-auto">{children}</div>
+        <ChatWidget /> {/* <-- RENDER */}
       </main>
-      <ChatWidget />
     </div>
   );
 };

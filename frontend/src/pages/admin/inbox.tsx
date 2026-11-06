@@ -1,3 +1,10 @@
 import { AdminLayout } from '../../modules/shared/AdminLayout';
-import { InboxModule } from '../../modules/inbox/InboxModule';
-export default function InboxPage() { return <AdminLayout><InboxModule /></AdminLayout>; }
+import InboxModule from '../../modules/inbox/InboxModule'; // <-- Default Import
+
+export default function AdminInboxPage() {
+  return (
+    <AdminLayout>
+      <InboxModule />
+    </AdminLayout>
+  );
+}

@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { apiFetch } from '../shared/api';
 import { useAuth } from '../shared/auth-context';
 import toast from 'react-hot-toast';
-import { Send } from 'lucide-react';
 
 export const InboxModule = () => {
   const { user } = useAuth();
@@ -38,7 +37,7 @@ export const InboxModule = () => {
 
     setSending(true);
     const payload = {
-      senderId: user.id, // FIX: Added missing senderId
+      senderId: user.id,
       receiverId: selectedClient.id,
       content: input.trim(),
     };
@@ -103,14 +102,13 @@ export const InboxModule = () => {
               <form onSubmit={handleSend} className="flex gap-2">
                 <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type a message..." className="flex-1 border border-gray-300 rounded-md px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500" disabled={sending} />
                 <button type="submit" disabled={!input.trim() || sending} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition disabled:opacity-50 flex items-center gap-2">
-                  <Send className="w-4 h-4" /> Send
+                  Send
                 </button>
               </form>
             </div>
           </>
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-gray-400">
-            <svg className="w-12 h-12 mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
             <p className="text-lg font-medium text-gray-500">Select a client to start chatting.</p>
           </div>
         )}
@@ -118,3 +116,5 @@ export const InboxModule = () => {
     </div>
   );
 };
+
+export default InboxModule; // <-- Añadido para evitar el error de importación
