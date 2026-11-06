@@ -15,13 +15,12 @@ export class StripeService {
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) throw new Error('Customer not found');
 
-    // Si usas las claves reales, esto crea la sesión de pago real
     const session = await this.stripe.checkout.sessions.create({
       line_items: [{
         price_data: {
           currency: 'usd',
           product_data: { name: `Quantum Flux - ${serviceId.toUpperCase()}` },
-          unit_amount: 14900, // $149.00
+          unit_amount: 14900,
         },
         quantity: 1,
       }],
@@ -37,13 +36,25 @@ export class StripeService {
 
   async handleWebhook(signature: string, payload: Buffer) {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    let event: Stripe.Event;
+    const isProduction = process.env.NODE_ENV === 'production';
+    const hasRealSecret = !!webhookSecret && webhookSecret !== 'whsec_...';
 
+    // Fail closed: in production we refuse to accept unsigned payloads.
+    if (isProduction && !hasRealSecret) {
+      this.logger.error('STRIPE_WEBHOOK_SECRET is not configured in production. Rejecting webhook.');
+      throw new Error('Webhook secret not configured.');
+    }
+    if (hasRealSecret && !signature) {
+      this.logger.error('Missing stripe-signature header.');
+      throw new Error('Missing stripe-signature header.');
+    }
+
+    let event: Stripe.Event;
     try {
-      if (webhookSecret && webhookSecret !== 'whsec_...') {
-        event = this.stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+      if (hasRealSecret) {
+        event = this.stripe.webhooks.constructEvent(payload, signature, webhookSecret!);
       } else {
-        // Fallback para desarrollo local sin webhook real
+        this.logger.warn('Webhook signature verification BYPASSED (dev mode, no secret).');
         event = JSON.parse(payload.toString());
       }
     } catch (err: any) {
@@ -59,14 +70,15 @@ export class StripeService {
       if (customerId && serviceId) {
         const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
         if (customer) {
-          // Añadimos el servicio pagado a la lista del cliente
           const currentServices = customer.services || [];
           if (!currentServices.includes(serviceId)) {
             await this.prisma.customer.update({
               where: { id: customerId },
               data: { services: { push: serviceId } }
             });
-            this.logger.log(`✅ Servicio ${serviceId} activado para el cliente ${customerId}`);
+            this.logger.log(`Service ${serviceId} activated for customer ${customerId}`);
+          } else {
+            this.logger.log(`Service ${serviceId} already active for customer ${customerId} (idempotent no-op)`);
           }
         }
       }

@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import { useState, useEffect } from 'react';
 import { UploadCard } from './components/UploadCard';
 import { apiFetch, apiDownload } from '../shared/api';
@@ -78,7 +79,7 @@ export const DashboardModule = () => {
                         <span className="text-xs text-gray-400">Pending review</span>
                       ) : (
                         <button 
-                          onClick={() => apiDownload(`/credit/my-disputes/${d.id}/pdf`, `Dispute_${d.id}.pdf`).catch(e => alert(e.message))}
+                          onClick={() => apiDownload(`/credit/my-disputes/${d.id}/pdf`, `Dispute_${d.id}.pdf`).catch(e => toast.error(e.message))}
                           className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
                         >
                           Download Letter
