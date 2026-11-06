@@ -38,3 +38,8 @@
 - Resolved Node.js engine compatibility by updating `frontend/package.json` to `"node": "24.x"` (Vercel deprecated 20.x).
 - Fixed relative import paths (`../../modules/shared/AdminLayout`) for the modular architecture.
 - Vercel deployment is now **Ready** and serving the frontend successfully.
+
+## 🧪 Smoke Tests Passed (Vercel Production)
+- ✅ **Public Login (`/login`):** Correctly blocks Staff emails and displays a redirect message to the dedicated portal.
+- ✅ **Staff Login (`/staff-login`):** Dedicated portal works and loads the role selector.
+- ✅ **RBAC Enforcement (`/admin/tax-business`):** Logged in as `TAX_BUSINESS`. Sidebar correctly isolates the module. Client list fetches successfully from the backend.
