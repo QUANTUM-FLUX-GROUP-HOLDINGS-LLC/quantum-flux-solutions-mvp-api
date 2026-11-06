@@ -6,7 +6,6 @@ export default function TaxBusinessModule() {
   const [selectedClient, setSelectedClient] = useState<any | null>(null);
   const [taxProfile, setTaxProfile] = useState<any>(null);
   
-  // Formulario
   const [entityType, setEntityType] = useState('S-CORP');
   const [ein, setEin] = useState('');
   const [grossRevenue, setGrossRevenue] = useState(0);
@@ -32,7 +31,7 @@ export default function TaxBusinessModule() {
         setGrossRevenue(data.grossRevenue || 0);
         setHasEmployees(data.hasEmployees || false);
       } else {
-        setTaxProfile(null); // No data yet
+        setTaxProfile(null);
         setEntityType('S-CORP'); setEin(''); setGrossRevenue(0); setHasEmployees(false);
       }
     }
@@ -42,9 +41,8 @@ export default function TaxBusinessModule() {
     e.preventDefault();
     if (!selectedClient) return;
     
-    // Enviamos los datos a la API (simulando que el Admin los está actualizando por el cliente)
     const res = await fetch(`${API_URL}/tax-business/customers/${selectedClient.id}`, {
-      method: "POST", // O PATCH, dependiendo de tu config
+      method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ entityType, ein, grossRevenue, hasEmployees }),
     });
@@ -52,14 +50,17 @@ export default function TaxBusinessModule() {
     if (res.ok) {
       alert("Business Profile Saved!");
       setTaxProfile({ entityType, ein, grossRevenue, hasEmployees });
+    } else {
+      const errorData = await res.json();
+      // Muestra el error exacto que rebota desde el backend
+      alert(`Error: ${Array.isArray(errorData.message) ? errorData.message[0] : errorData.message}`);
     }
   }
 
   return (
     <AdminLayout>
       <div className="flex gap-6 max-w-6xl">
-        {/* Lista de Clientes */}
-        <div className="w-1/3 bg-indigo-900 text-white rounded-lg shadow-md h-[80vh] overflow-y-auto">
+        <div className="w-1/3 bg-indigo-900 text-white rounded-lg shadow-md h-[80vh] overflow-y-auto"> 
           <div className="p-4 border-b border-indigo-700 bg-indigo-950 font-bold text-lg">Corporate Clients</div>
           <ul>
             {customers.map(c => (
@@ -71,7 +72,6 @@ export default function TaxBusinessModule() {
           </ul>
         </div>
 
-        {/* Workspace */}
         <div className="w-2/3 space-y-4">
           {selectedClient ? (
             <>
@@ -94,7 +94,23 @@ export default function TaxBusinessModule() {
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-indigo-500 uppercase mb-1">EIN (Tax ID)</label>
-                    <input type="text" value={ein} onChange={e => setEin(e.target.value)} placeholder="XX-XXXXXXX" className="w-full border p-2 rounded text-sm bg-indigo-50 border-indigo-200 text-gray-800 font-semibold" />
+                    <input 
+                      type="text" 
+                      value={ein} 
+                      onChange={(e) => {
+                        // VALIDACIÓN EN TIEMPO REAL (A prueba de fallos)
+                        let val = e.target.value.replace(/\D/g, ''); // Quita todo lo que no sea número
+                        val = val.substring(0, 9); // Corta a 9 números máximo
+                        if (val.length > 2) {
+                          val = val.substring(0, 2) + '-' + val.substring(2);
+                        }
+                        setEin(val);
+                      }} 
+                      placeholder="XX-XXXXXXX" 
+                      maxLength={10}
+                      className="w-full border p-2 rounded text-sm bg-indigo-50 border-indigo-200 text-gray-800 font-semibold" 
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Format: 12-3456789</p>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-indigo-500 uppercase mb-1">Gross Revenue ($)</label>
