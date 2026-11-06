@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../core/database/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
@@ -58,7 +60,7 @@ export class CreditService {
     if (!dispute) throw new NotFoundException('Dispute not found');
 
     if (dispute.status === 'PENDING') {
-      throw new Error('This dispute is pending admin review. You cannot download the letter yet.');
+      throw new ConflictException('This dispute is pending admin review. You cannot download the letter yet.');
     }
 
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
