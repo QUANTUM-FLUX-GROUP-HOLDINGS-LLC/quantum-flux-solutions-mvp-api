@@ -8,7 +8,7 @@ export const AdminLayout = ({ children, role }: { children: React.ReactNode, rol
 
   const handleSignOut = () => {
     localStorage.removeItem('token');
-    router.push('/login');
+    router.push('/staff-login');
   };
 
   return (
