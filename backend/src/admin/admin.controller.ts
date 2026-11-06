@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { PrismaService } from '../core/database/prisma.service';
 
 @Controller('admin')
@@ -7,18 +7,18 @@ export class AdminController {
 
   @Get('clients')
   async getAllClients(@Query('role') role: string) {
-    // Si es ADMIN, ve todo. Si no, solo ve a los usuarios con rol CLIENT.
     const whereClause = role === 'ADMIN' ? {} : { role: 'CLIENT' };
-    
-    return this.prisma.customer.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
+    return this.prisma.customer.findMany({ where: whereClause, orderBy: { createdAt: 'desc' }, select: { id: true, email: true, name: true, role: true, createdAt: true } });
+  }
+
+  @Post('clients')
+  async createClient(@Body() body: any) {
+    return this.prisma.customer.create({
+      data: {
+        name: body.name,
+        email: body.email,
+        password: body.password || 'password123', // En producción esto debe encriptarse con bcrypt
+        role: 'CLIENT'
       }
     });
   }
