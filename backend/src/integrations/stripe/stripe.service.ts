@@ -8,9 +8,7 @@ export class StripeService {
   private readonly logger = new Logger(StripeService.name);
 
   constructor(private prisma: PrismaService) {
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', {
-      apiVersion: '2024-11-20.acacia' as any,
-    });
+    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock');
   }
 
   async createCheckoutSession(customerId: string, serviceId: string) {
@@ -19,7 +17,6 @@ export class StripeService {
 
     // Si usas las claves reales, esto crea la sesión de pago real
     const session = await this.stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
       line_items: [{
         price_data: {
           currency: 'usd',
