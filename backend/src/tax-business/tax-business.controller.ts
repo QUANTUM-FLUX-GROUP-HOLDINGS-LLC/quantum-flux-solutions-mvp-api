@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { TaxBusinessService } from './tax-business.service';
 import PDFDocument from 'pdfkit';
@@ -26,12 +26,11 @@ export class TaxBusinessController {
     doc.fontSize(14).text('Business Tax Profile Summary', { align: 'center' });
     doc.moveDown();
 
-    // Body
-    doc.fontSize(12).text(`Entity Name: ${profile.entityName || 'N/A'}`);
+    // Body (Usando los nombres correctos del Schema de Prisma)
+    doc.fontSize(12).text(`Entity Type: ${profile.entityType || 'N/A'}`);
     doc.text(`EIN: ${profile.ein || 'N/A'}`);
-    doc.text(`Entity Type: ${profile.entityType || 'N/A'}`);
     doc.text(`Gross Revenue: $${profile.grossRevenue || 0}`);
-    doc.text(`Employees: ${profile.employees || 0}`);
+    doc.text(`Has Employees: ${profile.hasEmployees ? 'Yes' : 'No'}`);
     doc.moveDown();
     doc.text(`Generated on: ${new Date().toLocaleDateString()}`);
 

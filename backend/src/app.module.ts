@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
-import { PrismaModule } from './prisma/prisma.module';
 import { PrismaModule } from './core/database/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { StorageModule } from './storage/storage.module';
@@ -14,7 +13,7 @@ import { MessagesModule } from './messages/messages.module';
 import { StripeModule } from './stripe/stripe.module';
 
 @Module({
-  imports: [PrismaModule, 
+  imports: [
     PrismaModule,
     AuthModule,
     StorageModule,
