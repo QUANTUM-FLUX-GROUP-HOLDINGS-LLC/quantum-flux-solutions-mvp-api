@@ -3,7 +3,8 @@ import { useRouter } from 'next/router';
 
 export default function AdminPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'clients'>('dashboard');
+  // Definimos pestañas estrictas
+  const [activeTab, setActiveTab] = useState<string>('');
   const [metrics, setMetrics] = useState<any>(null);
   
   const [customers, setCustomers] = useState<any[]>([]);
@@ -27,9 +28,19 @@ export default function AdminPage() {
     if (u) {
       const parsedUser = JSON.parse(u);
       setUser(parsedUser);
+      
+      // SEGURIDAD DE RUTA: Si es un cliente, no entra aquí.
       if (parsedUser.role === 'CLIENT' || !parsedUser.role) {
         router.push('/dashboard');
         return;
+      }
+      
+      // REDIRECCIÓN INICIAL SEGÚN ROL
+      // Admin ve el Dashboard General. Los demás ven su lista de clientes por defecto.
+      if (parsedUser.role === 'ADMIN') {
+        setActiveTab('dashboard');
+      } else {
+        setActiveTab('clients');
       }
     }
     fetchData();
@@ -51,7 +62,7 @@ export default function AdminPage() {
 
   async function loadClientWorkspace(client: any) {
     setSelectedClient(client);
-    setActiveTab('clients');
+    setActiveTab('client_detail');
     setTaxProfile(null);
     setDisputes([]);
     setDocuments([]);
@@ -114,17 +125,16 @@ export default function AdminPage() {
     } catch (err: any) { alert(err.message); }
   }
 
-  // Lógica estricta de permisos
   const isAdmin = user?.role === 'ADMIN';
   const isCredit = user?.role === 'CREDIT_REPAIR';
   const isTax = user?.role === 'TAX_PERSONAL' || user?.role === 'TAX_BUSINESS';
   const isBookkeeping = user?.role === 'BOOKKEEPING';
 
-  const canManageDisputes = isAdmin || isCredit;
-  const canManageTax = isAdmin || isTax;
+  if (!user || !activeTab) return <div className="p-10">Cargando sistema...</div>;
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
+      {/* SIDEBAR DINÁMICO */}
       <div className="w-64 bg-gray-900 text-white flex flex-col">
         <div className="p-6 text-xl font-bold text-red-500">Quantum Flux CRM</div>
         <div className="px-4 mb-4 text-xs font-bold text-gray-500 uppercase tracking-wide">
@@ -132,13 +142,20 @@ export default function AdminPage() {
         </div>
         
         <nav className="flex-1 px-4 space-y-2">
-          <button onClick={() => setActiveTab('dashboard')} className={`w-full text-left px-4 py-2 rounded-md font-medium text-sm ${activeTab === 'dashboard' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'}`}>Dashboard</button>
-          <button onClick={() => { setActiveTab('clients'); setSelectedClient(null); }} className={`w-full text-left px-4 py-2 rounded-md font-medium text-sm ${activeTab === 'clients' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'}`}>All Clients</button>
+          {/* Solo el Admin ve el Dashboard general */}
+          {isAdmin && (
+            <button onClick={() => setActiveTab('dashboard')} className={`w-full text-left px-4 py-2 rounded-md font-medium text-sm ${activeTab === 'dashboard' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'}`}>Dashboard General</button>
+          )}
           
-          {/* Opciones estrictas según rol */}
-          {canManageDisputes && <div className="px-4 py-2 mt-4 text-xs font-bold text-gray-600 uppercase">Credit Repair</div>}
-          {canManageTax && <div className="px-4 py-2 mt-4 text-xs font-bold text-gray-600 uppercase">Tax Preparation</div>}
-          {isBookkeeping && <div className="px-4 py-2 mt-4 text-xs font-bold text-gray-600 uppercase">Bookkeeping</div>}
+          {/* Todos ven la lista de clientes, pero con títulos distintos */}
+          <button onClick={() => { setActiveTab('clients'); setSelectedClient(null); }} className={`w-full text-left px-4 py-2 rounded-md font-medium text-sm ${activeTab === 'clients' || activeTab === 'client_detail' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'}`}>
+            {isAdmin ? 'All Clients' : isCredit ? 'My Credit Clients' : isTax ? 'My Tax Clients' : 'My Bookkeeping Clients'}
+          </button>
+
+          {/* Módulos específicos (Visuales por ahora, bloqueados a nivel de backend) */}
+          {isCredit && <div className="px-4 py-2 mt-4 text-xs font-bold text-yellow-500 uppercase">Credit Module</div>}
+          {isTax && <div className="px-4 py-2 mt-4 text-xs font-bold text-blue-500 uppercase">Tax Module</div>}
+          {isBookkeeping && <div className="px-4 py-2 mt-4 text-xs font-bold text-green-500 uppercase">Bookkeeping Module</div>}
         </nav>
         
         <div className="p-4 border-t border-gray-700">
@@ -146,18 +163,19 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="flex-1 flex">
-        {activeTab === 'dashboard' && (
+      <div className="flex-1 flex overflow-hidden">
+        {/* VISTA 1: DASHBOARD GENERAL (SOLO ADMIN) */}
+        {activeTab === 'dashboard' && isAdmin && (
           <div className="p-10 w-full max-w-5xl">
-            <h1 className="text-3xl font-bold text-gray-800 mb-8">Welcome, {user?.name}</h1>
+            <h1 className="text-3xl font-bold text-gray-800 mb-8">Command Center</h1>
             <div className="grid grid-cols-3 gap-6">
               <div className="bg-white p-6 rounded-lg shadow border-t-4 border-blue-500">
-                <p className="text-sm text-gray-500 font-medium">Your Role</p>
-                <p className="text-2xl font-bold text-gray-800">{user?.role}</p>
-              </div>
-              <div className="bg-white p-6 rounded-lg shadow border-t-4 border-yellow-500">
                 <p className="text-sm text-gray-500 font-medium">Total Clients</p>
                 <p className="text-4xl font-bold text-gray-800">{metrics?.totalClients || 0}</p>
+              </div>
+              <div className="bg-white p-6 rounded-lg shadow border-t-4 border-yellow-500">
+                <p className="text-sm text-gray-500 font-medium">Pending Disputes</p>
+                <p className="text-4xl font-bold text-gray-800">{metrics?.activeDisputes || 0}</p>
               </div>
               <div className="bg-white p-6 rounded-lg shadow border-t-4 border-green-500">
                 <p className="text-sm text-gray-500 font-medium">Documents Stored</p>
@@ -167,91 +185,111 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* VISTA 2: LISTA DE CLIENTES */}
         {activeTab === 'clients' && (
-          <>
-            <div className="w-1/3 border-r bg-white h-screen overflow-y-auto">
-              <div className="p-6 border-b">
-                <h2 className="text-lg font-bold">Clients</h2>
-              </div>
-              <ul>
-                {customers.map((c) => (
-                  <li key={c.id} onClick={() => loadClientWorkspace(c)} className={`p-4 border-b cursor-pointer hover:bg-gray-50 ${selectedClient?.id === c.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}>
-                    <p className="font-semibold text-sm">{c.name}</p>
-                    <p className="text-xs text-gray-500">{c.email}</p>
-                  </li>
-                ))}
-              </ul>
+          <div className="w-full p-10">
+            <h1 className="text-2xl font-bold text-gray-800 mb-6">Client Directory</h1>
+            <div className="bg-white rounded-lg shadow border overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {customers.map((c) => (
+                    <tr key={c.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{c.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{c.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                        <button onClick={() => loadClientWorkspace(c)} className="text-blue-600 hover:underline">Open Workspace</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* VISTA 3: DETALLE DEL CLIENTE (WORKSPACE) */}
+        {activeTab === 'client_detail' && selectedClient && (
+          <div className="w-full flex">
+            {/* Botón para volver a la lista */}
+            <div className="w-64 border-r bg-gray-100 p-4">
+               <button onClick={() => setActiveTab('clients')} className="text-sm text-blue-600 font-medium hover:underline flex items-center gap-2">
+                 &larr; Back to Client List
+               </button>
+               <div className="mt-8">
+                  <h3 className="font-bold text-gray-800 text-lg">{selectedClient.name}</h3>
+                  <p className="text-sm text-gray-500">{selectedClient.email}</p>
+               </div>
             </div>
 
-            <div className="w-2/3 p-8 bg-gray-50 h-screen overflow-y-auto">
-              {!selectedClient ? (
-                <div className="text-center text-gray-500 mt-20">Select a client to open their workspace.</div>
-              ) : (
-                <div className="space-y-6 max-w-4xl">
-                  <div className="bg-white p-6 rounded-lg shadow-sm border">
-                    <h1 className="text-2xl font-bold">{selectedClient.name}'s Workspace</h1>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="bg-white p-6 rounded-lg shadow-sm border">
-                      <h3 className="font-bold mb-4 text-gray-800">Documents</h3>
-                      {documents.length === 0 ? <p className="text-sm text-gray-500">No docs.</p> : (
-                        <ul className="space-y-2">
-                          {documents.map(d => (
-                            <li key={d.id} className="text-sm border p-2 rounded">{d.fileName}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-
-                    {canManageTax && (
-                      <div className="bg-white p-6 rounded-lg shadow-sm border">
-                        <h3 className="font-bold mb-4 text-gray-800">Tax Profile</h3>
-                        {!taxProfile ? <p className="text-sm text-gray-500">Not filled.</p> : (
-                          <div className="text-sm space-y-2">
-                            <p><strong>Status:</strong> {taxProfile.filingStatus}</p>
-                            <p><strong>Income:</strong> ${taxProfile.income}</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {isBookkeeping && (
-                      <div className="bg-white p-6 rounded-lg shadow-sm border border-dashed text-center">
-                        <h3 className="font-bold mb-2 text-gray-800">Bookkeeping</h3>
-                        <p className="text-sm text-gray-500">No statements uploaded.</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {canManageDisputes && (
-                    <div className="bg-white p-6 rounded-lg shadow-sm border">
-                      <h3 className="font-bold mb-4 text-gray-800">Disputes</h3>
-                      <form onSubmit={handleCreateDispute} className="flex gap-2 mb-4">
-                        <select value={bureau} onChange={e => setBureau(e.target.value)} className="border p-2 rounded text-sm w-1/4">
-                          <option>Equifax</option><option>Experian</option><option>TransUnion</option> 
-                        </select>
-                        <input type="text" placeholder="Account Name" value={accountName} onChange={e => setAccountName(e.target.value)} className="border p-2 rounded text-sm w-1/2" required />
-                        <button type="submit" className="bg-black text-white px-4 rounded text-sm">Add</button>
-                      </form>
-                      
-                      <ul className="space-y-2">
-                        {disputes.map(d => (
-                          <li key={d.id} className="flex justify-between items-center text-sm border p-2 rounded">
-                            <span>{d.bureau} - {d.accountName}</span>
-                            <div className="flex gap-2 items-center">
-                              <span className="text-xs bg-yellow-100 px-2 py-1 rounded">{d.status}</span>
-                              {d.status === 'PENDING' && <button onClick={() => approveDispute(d.id)} className="bg-green-600 text-white px-2 py-1 rounded text-xs">Approve</button>}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+            {/* Contenido del Workspace */}
+            <div className="flex-1 p-8 h-screen overflow-y-auto space-y-6">
+              
+              <div className="grid grid-cols-2 gap-6">
+                <div className="bg-white p-6 rounded-lg shadow-sm border">
+                  <h3 className="font-bold mb-4 text-gray-800">Documents</h3>
+                  {documents.length === 0 ? <p className="text-sm text-gray-500">No docs.</p> : (
+                    <ul className="space-y-2">
+                      {documents.map(d => (
+                        <li key={d.id} className="text-sm border p-2 rounded">{d.fileName}</li>
+                      ))}
+                    </ul>
                   )}
+                </div>
+
+                {isTax || isAdmin ? (
+                  <div className="bg-white p-6 rounded-lg shadow-sm border">
+                    <h3 className="font-bold mb-4 text-gray-800">Tax Profile</h3>
+                    {!taxProfile ? <p className="text-sm text-gray-500">Not filled.</p> : (
+                      <div className="text-sm space-y-2">
+                        <p><strong>Status:</strong> {taxProfile.filingStatus}</p>
+                        <p><strong>Income:</strong> ${taxProfile.income}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+
+                {isBookkeeping || isAdmin ? (
+                  <div className="bg-white p-6 rounded-lg shadow-sm border border-dashed text-center">
+                    <h3 className="font-bold mb-2 text-gray-800">Bookkeeping</h3>
+                    <p className="text-sm text-gray-500">No statements uploaded.</p>
+                  </div>
+                ) : null}
+              </div>
+
+              {/* Disputas de Crédito */}
+              {(isCredit || isAdmin) && (
+                <div className="bg-white p-6 rounded-lg shadow-sm border">
+                  <h3 className="font-bold mb-4 text-gray-800">Credit Disputes</h3>
+                  <form onSubmit={handleCreateDispute} className="flex gap-2 mb-4">
+                    <select value={bureau} onChange={e => setBureau(e.target.value)} className="border p-2 rounded text-sm w-1/4">
+                      <option>Equifax</option><option>Experian</option><option>TransUnion</option> 
+                    </select>
+                    <input type="text" placeholder="Account Name" value={accountName} onChange={e => setAccountName(e.target.value)} className="border p-2 rounded text-sm w-1/2" required />
+                    <button type="submit" className="bg-black text-white px-4 rounded text-sm">Add</button>
+                  </form>
+                  
+                  <ul className="space-y-2">
+                    {disputes.map(d => (
+                      <li key={d.id} className="flex justify-between items-center text-sm border p-2 rounded">
+                        <span>{d.bureau} - {d.accountName}</span>
+                        <div className="flex gap-2 items-center">
+                          <span className="text-xs bg-yellow-100 px-2 py-1 rounded">{d.status}</span>
+                          {d.status === 'PENDING' && <button onClick={() => approveDispute(d.id)} className="bg-green-600 text-white px-2 py-1 rounded text-xs">Approve</button>}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
