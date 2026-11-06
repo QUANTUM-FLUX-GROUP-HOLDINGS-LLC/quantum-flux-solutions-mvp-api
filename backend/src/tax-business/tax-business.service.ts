@@ -16,4 +16,9 @@ export class TaxBusinessService {
       create: { customerId, ...data },
     });
   }
+  async findOne(id: string) {
+    return this.prisma.businessTaxProfile.findUnique({
+      where: { id },
+    });
+  }
 }

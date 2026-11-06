@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
+import { PrismaModule } from './prisma/prisma.module';
 import { PrismaModule } from './core/database/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { StorageModule } from './storage/storage.module';
@@ -9,12 +10,11 @@ import { MailModule } from './mail/mail.module';
 import { CreditModule } from './credit/credit.module';
 import { TaxModule } from './tax/tax.module';
 import { TaxBusinessModule } from './tax-business/tax-business.module';
-import { StripeModule } from './integrations/stripe/stripe.module';
 import { MessagesModule } from './messages/messages.module';
 import { StripeModule } from './stripe/stripe.module';
 
 @Module({
-  imports: [
+  imports: [PrismaModule, 
     PrismaModule,
     AuthModule,
     StorageModule,
