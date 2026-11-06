@@ -40,8 +40,8 @@ export const DashboardModule = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <UploadCard title="Upload Identification" description="Please upload a valid government ID (Driver's License or Passport)." />
-        <UploadCard title="Upload Financial Documents" description="Upload your recent W-2, Paystubs, or Bank Statements." />
+        <UploadCard title="Upload Identification" description="Please upload a valid government ID (Driver's License or Passport)." category="IDENTIFICATION" />
+        <UploadCard title="Upload Financial Documents" description="Upload your recent W-2, Paystubs, or Bank Statements." category="FINANCIAL" />
       </div>
 
       <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-6">
