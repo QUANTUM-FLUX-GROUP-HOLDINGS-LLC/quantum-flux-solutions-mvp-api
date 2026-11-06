@@ -20,9 +20,13 @@ export default function DashboardHub() {
   // Handle Stripe Checkout redirects (?success=true / ?canceled=true).
   useEffect(() => {
     if (!router.isReady || handledReturn.current) return;
+    
     if (router.query.success === 'true') {
       handledReturn.current = true;
       void (async () => {
+        // Give the Stripe webhook a 2-second head start to hit our backend
+        // before we try to fetch the updated entitlements.
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         await refreshEntitlements();
         toast.success('Payment received — your service is now unlocked.');
         router.replace('/dashboard', undefined, { shallow: true });
