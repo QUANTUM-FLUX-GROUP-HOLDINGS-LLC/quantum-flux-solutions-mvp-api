@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { PrismaService } from '../core/database/prisma.service';
+import * as bcrypt from 'bcrypt';
 
 @Controller('admin')
 export class AdminController {
@@ -17,8 +18,21 @@ export class AdminController {
       data: {
         name: body.name,
         email: body.email,
-        password: body.password || 'password123', // En producción esto debe encriptarse con bcrypt
+        password: 'password123', // En producción usar bcrypt
         role: 'CLIENT'
+      }
+    });
+  }
+
+  @Post('staff')
+  async createStaff(@Body() body: any) {
+    const hashedPassword = await bcrypt.hash('password123', 10);
+    return this.prisma.customer.create({
+      data: {
+        name: body.name,
+        email: body.email,
+        password: hashedPassword,
+        role: body.role
       }
     });
   }

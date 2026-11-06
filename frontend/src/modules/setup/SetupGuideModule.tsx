@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { InviteTeamModal } from './components/InviteTeamModal';
 
 export const SetupGuideModule = () => {
   const [openStep, setOpenStep] = useState<number | null>(1);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
   const steps = [
     { id: 1, title: 'Invite Your Team', desc: 'Add the staff who will work your clients and set their access level.', action: 'Invite Team Members' },
@@ -13,6 +15,11 @@ export const SetupGuideModule = () => {
     { id: 7, title: 'Create Your First Letter', desc: 'See how letters and dispute workflows come together in the Letter Library.', action: 'Open Letter Library' },
     { id: 8, title: 'Set Mailing Preferences', desc: 'Confirm how letters print and add the prepaid credits that pay for postage.', action: 'Buy Mailing Credits' },
   ];
+
+  const handleAction = (stepId: number) => {
+    if (stepId === 1) setIsInviteModalOpen(true);
+    // Aquí puedes agregar la lógica para los demás pasos
+  };
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -53,7 +60,7 @@ export const SetupGuideModule = () => {
             {openStep === step.id && (
               <div className="p-4 border-t border-gray-100 bg-gray-50">
                 <p className="text-sm text-gray-600 mb-4">{step.desc}</p>
-                <button className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition">
+                <button onClick={() => handleAction(step.id)} className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition">
                   {step.action} →
                 </button>
               </div>
@@ -61,6 +68,8 @@ export const SetupGuideModule = () => {
           </div>
         ))}
       </div>
+
+      <InviteTeamModal isOpen={isInviteModalOpen} onClose={() => setIsInviteModalOpen(false)} />
     </div>
   );
 };
