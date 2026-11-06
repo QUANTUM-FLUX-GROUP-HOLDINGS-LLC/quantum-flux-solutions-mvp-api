@@ -12,10 +12,15 @@ export default function DashboardHub() {
   const { user, services, loading, refreshEntitlements } = useAuth();
   const handledReturn = useRef(false);
 
+  // Guard: expect a tiny delay before kicking out
   useEffect(() => {
-    if (!loading && !user) router.push('/login');
+    if (!loading && !user) {
+      const timer = setTimeout(() => router.push('/login'), 800);
+      return () => clearTimeout(timer);
+    }
   }, [loading, user, router]);
 
+  // Handle Stripe Checkout redirects
   useEffect(() => {
     if (!router.isReady || handledReturn.current) return;
     
@@ -59,6 +64,14 @@ export default function DashboardHub() {
       btn.disabled = false;
     }
   };
+
+  if (loading && !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   return (
     <PortalLayout>

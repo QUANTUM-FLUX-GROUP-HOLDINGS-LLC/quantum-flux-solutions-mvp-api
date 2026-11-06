@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import { useAuth } from '../modules/shared/auth-context';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { refreshEntitlements } = useAuth(); // Traemos la función del contexto
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +34,10 @@ export default function LoginPage() {
 
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // 🔥 EL FIX: Despertamos al AuthContext ANTES de ir al dashboard
+      await refreshEntitlements();
+      
       router.push('/dashboard');
 
     } catch (err: any) {
