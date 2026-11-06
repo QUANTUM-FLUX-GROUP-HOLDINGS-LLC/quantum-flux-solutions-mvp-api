@@ -10,6 +10,7 @@ import { CreditModule } from './credit/credit.module';
 import { TaxModule } from './tax/tax.module';
 import { TaxBusinessModule } from './tax-business/tax-business.module';
 import { StripeModule } from './integrations/stripe/stripe.module';
+import { MessagesModule } from './messages/messages.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { StripeModule } from './integrations/stripe/stripe.module';
     TaxModule,
     TaxBusinessModule,
     StripeModule,
+    MessagesModule,
   ],
   controllers: [AppController],
   providers: [],
