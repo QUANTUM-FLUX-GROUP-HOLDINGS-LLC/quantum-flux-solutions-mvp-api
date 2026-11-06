@@ -5,24 +5,17 @@ export default function TaxBusinessModule() {
   const [clients, setClients] = useState<any[]>([]);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [role, setRole] = useState('USER');
 
   useEffect(() => {
     const storedRole = localStorage.getItem('role') || 'USER';
-    setRole(storedRole);
-
+    
     const fetchClients = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://quantum-flux-api-npru.onrender.com'}/admin/clients`);
+        // Enviamos el rol al backend para que él filtre
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://quantum-flux-api-npru.onrender.com'}/admin/clients?role=${storedRole}`);
         if (res.ok) {
           const data = await res.json();
-          
-          // LÓGICA CLAVE: Si es ADMIN, ve todo. Si es staff, solo ve CLIENTES.
-          const filteredData = storedRole === 'ADMIN' 
-            ? data 
-            : data.filter((u: any) => u.role === 'CLIENT');
-            
-          setClients(Array.isArray(filteredData) ? filteredData : []);
+          setClients(Array.isArray(data) ? data : []);
         }
       } catch (error) {
         console.error("Error fetching clients:", error);
@@ -36,7 +29,6 @@ export default function TaxBusinessModule() {
   return (
     <AdminLayout>
       <div className="flex gap-6 h-[calc(100vh-8rem)]">
-        {/* Lista de Clientes */}
         <div className="w-1/3 bg-[#1A1A1A] text-white rounded-lg overflow-hidden flex flex-col shadow-lg">
           <div className="p-4 border-b border-gray-800 bg-[#222]">
             <h2 className="font-bold text-lg">Corporate Clients</h2>
@@ -61,7 +53,6 @@ export default function TaxBusinessModule() {
           </div>
         </div>
 
-        {/* Área de Trabajo */}
         <div className="flex-1 bg-white rounded-lg shadow-lg p-6 overflow-y-auto">
           {selectedClient ? (
             <>
