@@ -18,7 +18,7 @@ export default function DashboardHub() {
   // ─── LÓGICA DE SUSCRIPCIONES (MOCK) ──────────────────────────────────────────
   // Cuando integremos Stripe, esto se leerá del JWT o de la DB: user.services
   // Por ahora, simulamos que el cliente SOLO ha pagado Credit Repair.
-  const activeServices = ['credit-repair']; 
+  const activeServices = user?.services || ['credit-repair']; 
 
   const allServices = [
     { id: 'credit-repair', name: 'Credit Repair', desc: 'View dispute status and upload credit reports.' },
@@ -59,17 +59,23 @@ export default function DashboardHub() {
                 <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] z-10 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={async (e) => {
                     e.preventDefault();
+                    const btn = e.currentTarget;
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = 'Cargando...';
+                    btn.disabled = true;
+                    
                     try {
                       const res = await apiFetch<{url: string}>('/stripe/checkout', {
                         method: 'POST',
                         body: JSON.stringify({ serviceId: service.id })
                       });
                       window.location.href = res.url;
-                    } catch (err) {
-                      alert('Error al conectar con Stripe. Revisa la consola.');
-                      console.error(err);
+                    } catch (err: any) {
+                      alert(`Error: ${err.message}`);
+                      btn.innerHTML = originalText;
+                      btn.disabled = false;
                     }
-                  }} className="bg-indigo-600 text-white px-6 py-2 rounded-md text-sm font-bold shadow-lg hover:bg-indigo-700">
+                  }} className="bg-indigo-600 text-white px-6 py-2 rounded-md text-sm font-bold shadow-lg hover:bg-indigo-700 disabled:opacity-50 transition-all">
                     Subscribe for $149
                   </button>
                 </div>

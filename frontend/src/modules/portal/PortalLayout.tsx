@@ -1,13 +1,23 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Lock } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export const PortalLayout = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
+  const [activeServices, setActiveServices] = useState<string[]>(['credit-repair']);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      if (user.services) setActiveServices(user.services);
+    }
+  }, []);
   
   // ─── LÓGICA DE SUSCRIPCIONES (MOCK) ──────────────────────────────────────────
   // Igual que en el Hub, simulamos que solo Credit Repair está activo.
-  const activeServices = ['credit-repair']; 
+ 
 
   const menu = [
     { name: 'Overview', path: '/dashboard', id: 'overview' },
