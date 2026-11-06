@@ -3,22 +3,32 @@ import { PrismaService } from '../core/database/prisma.service';
 
 @Injectable()
 export class TaxBusinessService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {}
 
-  async getProfile(customerId: string) {
-    return this.prisma.businessTaxProfile.findUnique({ where: { customerId } });
-  }
-
-  async updateProfile(customerId: string, data: any) {
-    return this.prisma.businessTaxProfile.upsert({
+  async findOne(customerId: string) {
+    return this.prisma.businessTaxProfile.findUnique({
       where: { customerId },
-      update: data,
-      create: { customerId, ...data },
     });
   }
-  async findOne(id: string) {
-    return this.prisma.businessTaxProfile.findUnique({
-      where: { id },
+
+  async upsertProfile(customerId: string, data: any) {
+    return this.prisma.businessTaxProfile.upsert({
+      where: { customerId },
+      update: {
+        entityType: data.entityType,
+        ein: data.ein,
+        grossRevenue: parseFloat(data.grossRevenue) || 0,
+        hasEmployees: data.hasEmployees,
+        notes: data.notes,
+      },
+      create: {
+        customerId,
+        entityType: data.entityType,
+        ein: data.ein,
+        grossRevenue: parseFloat(data.grossRevenue) || 0,
+        hasEmployees: data.hasEmployees,
+        notes: data.notes,
+      },
     });
   }
 }
