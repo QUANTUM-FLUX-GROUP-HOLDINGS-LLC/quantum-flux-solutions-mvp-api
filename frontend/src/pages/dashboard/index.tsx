@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { PortalLayout } from '../../modules/portal/PortalLayout';
 import { Lock, CheckCircle } from 'lucide-react';
+import { apiFetch } from '../../modules/shared/api';
 
 export default function DashboardHub() {
   const [user, setUser] = useState<any>(null);
@@ -56,7 +57,19 @@ export default function DashboardHub() {
             return (
               <div key={service.id} className="relative p-6 bg-gray-50 border border-gray-200 rounded-lg opacity-75 overflow-hidden group">
                 <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] z-10 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button className="bg-indigo-600 text-white px-6 py-2 rounded-md text-sm font-bold shadow-lg hover:bg-indigo-700">
+                  <button onClick={async (e) => {
+                    e.preventDefault();
+                    try {
+                      const res = await apiFetch<{url: string}>('/stripe/checkout', {
+                        method: 'POST',
+                        body: JSON.stringify({ serviceId: service.id })
+                      });
+                      window.location.href = res.url;
+                    } catch (err) {
+                      alert('Error al conectar con Stripe. Revisa la consola.');
+                      console.error(err);
+                    }
+                  }} className="bg-indigo-600 text-white px-6 py-2 rounded-md text-sm font-bold shadow-lg hover:bg-indigo-700">
                     Subscribe for $149
                   </button>
                 </div>
