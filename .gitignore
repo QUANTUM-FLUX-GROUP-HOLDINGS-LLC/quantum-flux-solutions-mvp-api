@@ -38,3 +38,4 @@ lerna-debug.log*
 Thumbs.db
 backend/tsconfig.build.tsbuildinfo
 frontend/tsconfig.tsbuildinfo
+frontend/.env.local
