@@ -1,98 +1,90 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { AdminLayout } from '../../modules/shared/AdminLayout';
 
 export default function CreditModule() {
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [selectedClient, setSelectedClient] = useState<any | null>(null);
-  const [documents, setDocuments] = useState<any[]>([]);
-  const [disputes, setDisputes] = useState<any[]>([]);
-  const [bureau, setBureau] = useState('Equifax');
-  const [accountName, setAccountName] = useState('');
-  const [accountNumber, setAccountNumber] = useState('');
-  
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-
-  useEffect(() => { fetchData(); }, []);
-
-  async function fetchData() {
-    const res = await fetch(`${API_URL}/admin/customers`, { headers: { Authorization: `Bearer ${token}` }});
-    if (res.ok) setCustomers(await res.json());
-  }
-
-  async function loadClientWorkspace(client: any) {
-    setSelectedClient(client);
-    const docRes = await fetch(`${API_URL}/admin/customers/${client.id}/documents`, { headers: { Authorization: `Bearer ${token}` }});
-    if (docRes.ok) setDocuments(await docRes.json());
-
-    const dispRes = await fetch(`${API_URL}/credit/customers/${client.id}/disputes`, { headers: { Authorization: `Bearer ${token}` }});
-    if (dispRes.ok) setDisputes(await dispRes.json());
-  }
-
-  async function handleCreateDispute(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedClient) return;
-    const res = await fetch(`${API_URL}/credit/customers/${selectedClient.id}/disputes`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ bureau, accountName, accountNumber }),
-    });
-    if (res.ok) { alert("Dispute created!"); setAccountName(""); loadClientWorkspace(selectedClient); }
-  }
-
-  async function approveDispute(id: string) {
-    const res = await fetch(`${API_URL}/credit/disputes/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ status: 'SENT' }),
-    });
-    if (res.ok) { alert("Approved!"); loadClientWorkspace(selectedClient); }
-  }
+  const [activeTab, setActiveTab] = useState('Active');
+  const tabs = ['Active', 'Leads', 'Non-Payment', 'Paused', 'Finished', 'Deleted'];
 
   return (
     <AdminLayout>
-      <div className="flex gap-6 max-w-6xl">
-        <div className="w-1/3 bg-white border rounded-lg shadow-sm h-[80vh] overflow-y-auto">
-          <div className="p-4 border-b bg-gray-50 font-bold">Clients</div>
-          <ul>
-            {customers.map(c => (
-              <li key={c.id} onClick={() => loadClientWorkspace(c)} className={`p-4 border-b cursor-pointer hover:bg-gray-50 ${selectedClient?.id === c.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}>
-                <p className="font-semibold text-sm">{c.name}</p>
-                <p className="text-xs text-gray-500">{c.email}</p>
-              </li>
-            ))}
-          </ul>
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex justify-between items-end mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">All Clients</h1>
+            <p className="text-gray-500 text-sm mt-1">Search, filter, and open client workspaces. Follow-up due dates help prioritize outreach.</p>
+          </div>
+          <div className="flex gap-2">
+            <button className="border border-gray-300 bg-white text-gray-700 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-50 flex items-center gap-2">
+              <span>👤</span> Lead
+            </button>
+            <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition flex items-center gap-2">
+              <span>+</span> New Client
+            </button>
+          </div>
         </div>
 
-        <div className="w-2/3 space-y-4">
-          {selectedClient ? (
-            <>
-              <div className="bg-white p-4 rounded-lg shadow-sm border font-bold text-lg">{selectedClient.name}'s Credit Workspace</div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white p-4 rounded-lg shadow-sm border">
-                  <h3 className="font-bold mb-2">Docs</h3>
-                  {documents.map(d => <div key={d.id} className="text-sm border p-1 rounded mb-1">{d.fileName}</div>)}
-                </div>
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-yellow-200 bg-yellow-50">
-                  <h3 className="font-bold mb-2 text-yellow-900">Create Dispute</h3>
-                  <form onSubmit={handleCreateDispute} className="space-y-2">
-                    <select value={bureau} onChange={e => setBureau(e.target.value)} className="w-full border p-1 rounded text-sm"><option>Equifax</option><option>Experian</option><option>TransUnion</option></select>
-                    <input type="text" placeholder="Account Name" value={accountName} onChange={e => setAccountName(e.target.value)} className="w-full border p-1 rounded text-sm" required />
-                    <button type="submit" className="bg-black text-white px-3 py-1 rounded text-sm w-full">Add</button>
-                  </form>
-                </div>
-              </div>
-              <div className="bg-white p-4 rounded-lg shadow-sm border">
-                <h3 className="font-bold mb-2">Disputes</h3>
-                {disputes.map(d => (
-                  <div key={d.id} className="flex justify-between items-center border p-2 rounded mb-1 text-sm bg-yellow-50">
-                    <span>{d.bureau} - {d.accountName} ({d.status})</span>
-                    {d.status === 'PENDING' && <button onClick={() => approveDispute(d.id)} className="bg-green-600 text-white px-2 py-1 rounded text-xs">Approve</button>}
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : <div className="text-gray-500">Select a client</div>}
+        {/* Metrics Row */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          {[
+            { label: 'TOTAL CLIENTS', value: '0', sub: 'Excludes finished and deleted...' },
+            { label: 'NEW ENROLLMENTS (30D)', value: '0', sub: '' },
+            { label: 'ACTIVE', value: '0', sub: '' },
+            { label: 'NEEDS ATTENTION', value: '0', sub: 'All Clear' },
+          ].map((stat, i) => (
+            <div key={i} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+              <p className="text-xs font-semibold text-gray-500 tracking-wider">{stat.label}</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+              {stat.sub && <p className="text-xs text-gray-400 mt-1">{stat.sub}</p>}
+            </div>
+          ))}
+        </div>
+
+        {/* Client Directory Panel */}
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+          <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+            <h2 className="font-semibold text-gray-800">Client Directory</h2>
+            <button className="text-sm text-gray-600 font-medium hover:text-gray-900 flex items-center gap-1">
+              ✉️ Email Clients
+            </button>
+          </div>
+
+          {/* Tabs */}
+          <div className="px-4 pt-4 border-b border-gray-100 flex gap-4 text-sm overflow-x-auto">
+            {tabs.map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`pb-3 px-1 border-b-2 font-medium whitespace-nowrap ${
+                  activeTab === tab ? 'border-red-500 text-red-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {tab} <span className="ml-1 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">0</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Filters */}
+          <div className="p-4 bg-gray-50 flex flex-wrap gap-3 border-b border-gray-100">
+            <select className="border border-gray-300 rounded-md px-3 py-2 text-sm bg-white w-48">
+              <option>All Contracts</option>
+            </select>
+            <input type="text" placeholder="Search Name, Email, or Phone" className="border border-gray-300 rounded-md px-3 py-2 text-sm bg-white flex-1 min-w-[200px]" />
+            <select className="border border-gray-300 rounded-md px-3 py-2 text-sm bg-white w-40">
+              <option>All Providers</option>
+            </select>
+            <select className="border border-gray-300 rounded-md px-3 py-2 text-sm bg-white w-40">
+              <option>Due Date</option>
+            </select>
+            <button className="border border-gray-300 rounded-md px-3 py-2 text-sm bg-white hover:bg-gray-50 flex items-center gap-2">
+              🔄 Check Monitoring Status
+            </button>
+          </div>
+
+          {/* Empty State */}
+          <div className="p-12 text-center text-gray-500 text-sm">
+            No clients match these filters.
+          </div>
         </div>
       </div>
     </AdminLayout>
