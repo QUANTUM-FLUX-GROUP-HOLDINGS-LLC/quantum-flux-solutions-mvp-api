@@ -9,7 +9,7 @@ import { Roles } from '../auth/roles.decorator';
 export class TaxBusinessController {
   constructor(private readonly taxBusiness: TaxBusinessService) {}
 
-  // Cliente llenando sus propios datos
+  // Ruta para el cliente
   @Get('profile')
   @Roles('CLIENT')
   getMyProfile(@Req() req: any) {
@@ -22,10 +22,17 @@ export class TaxBusinessController {
     return this.taxBusiness.updateProfile(req.user.id, body);
   }
 
-  // Staff (Admin o Preparador Business) viendo los datos de un cliente
+  // Ruta para el Staff (Leer datos del cliente)
   @Get('customers/:id')
   @Roles('ADMIN', 'TAX_BUSINESS')
   getClientProfile(@Param('id') customerId: string) {
     return this.taxBusiness.getProfile(customerId);
+  }
+
+  // NUEVA RUTA: Para que el Staff guarde/actualice los datos del cliente
+  @Post('customers/:id')
+  @Roles('ADMIN', 'TAX_BUSINESS')
+  updateClientProfile(@Param('id') customerId: string, @Body() body: any) {
+    return this.taxBusiness.updateProfile(customerId, body);
   }
 }

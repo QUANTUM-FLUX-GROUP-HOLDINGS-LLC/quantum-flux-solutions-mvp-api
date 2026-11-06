@@ -43,7 +43,7 @@ export default function TaxBusinessModule() {
     if (!selectedClient) return;
     
     // Enviamos los datos a la API (simulando que el Admin los está actualizando por el cliente)
-    const res = await fetch(`${API_URL}/tax-business/customers/${selectedClient.id}/update`, {
+    const res = await fetch(`${API_URL}/tax-business/customers/${selectedClient.id}`, {
       method: "POST", // O PATCH, dependiendo de tu config
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ entityType, ein, grossRevenue, hasEmployees }),
