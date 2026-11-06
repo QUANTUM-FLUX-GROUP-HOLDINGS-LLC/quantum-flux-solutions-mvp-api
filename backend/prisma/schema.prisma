@@ -20,6 +20,7 @@ model Customer {
   documents  Document[]
   disputes   Dispute[]
   taxProfile TaxProfile?
+  businessTaxProfile BusinessTaxProfile?
 }
 
 model Document {
@@ -64,6 +65,19 @@ model TaxProfile {
   filingStatus String   @default("SINGLE")
   dependents   Int      @default(0)
   income       Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model BusinessTaxProfile {
+  id           String   @id @default(uuid())
+  customerId   String   @unique
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  entityType   String   @default("S-CORP")
+  ein          String?
+  grossRevenue Float    @default(0)
+  hasEmployees Boolean  @default(false)
+  notes        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }

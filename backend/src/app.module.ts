@@ -8,6 +8,7 @@ import { AdminModule } from './admin/admin.module';
 import { MailModule } from './mail/mail.module';
 import { CreditModule } from './credit/credit.module';
 import { TaxModule } from './tax/tax.module';
+import { TaxBusinessModule } from './tax-business/tax-business.module';
 import { StripeModule } from './integrations/stripe/stripe.module';
 
 @Module({
@@ -20,6 +21,7 @@ import { StripeModule } from './integrations/stripe/stripe.module';
     MailModule,
     CreditModule,
     TaxModule,
+    TaxBusinessModule,
     StripeModule,
   ],
   controllers: [AppController],
