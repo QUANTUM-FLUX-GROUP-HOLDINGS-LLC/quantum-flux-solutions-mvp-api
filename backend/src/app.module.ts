@@ -11,6 +11,7 @@ import { TaxModule } from './tax/tax.module';
 import { TaxBusinessModule } from './tax-business/tax-business.module';
 import { StripeModule } from './integrations/stripe/stripe.module';
 import { MessagesModule } from './messages/messages.module';
+import { StripeModule } from './stripe/stripe.module';
 
 @Module({
   imports: [
