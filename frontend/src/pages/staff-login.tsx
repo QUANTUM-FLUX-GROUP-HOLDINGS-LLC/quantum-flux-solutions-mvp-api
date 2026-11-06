@@ -32,6 +32,7 @@ export default function StaffLoginPage() {
       }
 
       localStorage.setItem('token', data.token);
+    localStorage.setItem('role', data.role || data.user?.role || 'USER');
       localStorage.setItem('user', JSON.stringify(data.user));
       router.push('/admin');
 
