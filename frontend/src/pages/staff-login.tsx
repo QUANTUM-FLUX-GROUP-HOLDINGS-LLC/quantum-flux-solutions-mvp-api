@@ -1,82 +1,85 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 
-export default function StaffLoginPage() {
-  const router = useRouter();
+export default function StaffLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedRole, setSelectedRole] = useState('ADMIN');
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [role, setRole] = useState('ADMIN');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-  async function handleLogin(e: React.FormEvent) {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setBusy(true);
-    setError(null);
+    setError('');
+    setLoading(true);
 
     try {
-      const res = await fetch(`${API_URL}/auth/login`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://quantum-flux-api-npru.onrender.com'}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
-      if (!res.ok) throw new Error('Invalid email or password');
       const data = await res.json();
 
-      // Validar que realmente sea Staff
-      if (data.user.role === 'CLIENT') {
-        throw new Error('This is a client account. Please use the main login page.');
+      if (!res.ok) {
+        throw new Error(data.message || 'Invalid credentials');
       }
 
-      localStorage.setItem('token', data.token);
-    localStorage.setItem('role', data.role || data.user?.role || 'USER');
-      localStorage.setItem('user', JSON.stringify(data.user));
-      router.push('/admin');
+      // Guardar token y rol (asegurando que se guarde el rol real del usuario)
+      localStorage.setItem('token', data.access_token || data.token);
+      
+      // Intentar extraer el rol de varias formas posibles en las que el backend lo envíe
+      const userRole = data.user?.role || data.role || role; 
+      localStorage.setItem('role', userRole);
+
+      // Redirigir según el rol
+      if (userRole === 'TAX_BUSINESS') router.push('/admin/tax-business');
+      else if (userRole === 'TAX_PERSONAL') router.push('/admin/tax-personal');
+      else if (userRole === 'CREDIT_REPAIR') router.push('/admin/credit');
+      else if (userRole === 'BOOKKEEPING') router.push('/admin/bookkeeping');
+      else router.push('/admin/dashboard');
 
     } catch (err: any) {
       setError(err.message);
     } finally {
-      setBusy(false);
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900">
-      <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-lg">
-        <h2 className="text-2xl font-bold text-center text-red-600 mb-2">Quantum Flux Staff</h2>
+      <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+        <h1 className="text-2xl font-bold text-center text-red-600 mb-2">Quantum Flux Staff</h1>
         <p className="text-center text-gray-500 mb-6">Restricted Access Portal</p>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Select Your Role</label>
-            <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} className="w-full border border-gray-300 rounded-md p-2 bg-gray-50">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Select Your Role (Optional)</label>
+            <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full border rounded-md p-2">
               <option value="ADMIN">Administrator</option>
-              <option value="CREDIT_REPAIR">Credit Repair Agent</option>
-              <option value="TAX_PERSONAL">Tax Preparer (Personal)</option>
-              <option value="TAX_BUSINESS">Tax Preparer (Business)</option>
-              <option value="BOOKKEEPING">Bookkeeper</option>
+              <option value="TAX_BUSINESS">Business Tax</option>
+              <option value="TAX_PERSONAL">Personal Tax</option>
+              <option value="CREDIT_REPAIR">Credit Repair</option>
+              <option value="BOOKKEEPING">Bookkeeping</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Staff Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 w-full border border-gray-300 rounded-md p-2" required />
+            <label className="block text-sm font-medium text-gray-700 mb-1">Staff Email</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full border rounded-md p-2" placeholder="business@test.com" />
           </div>
-          <div>
-            <div className="flex justify-between items-center">
-              <label className="block text-sm font-medium text-gray-700">Password</label>
-              <a href="#" className="text-xs text-blue-600 hover:underline">Forgot password?</a>
-            </div>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1 w-full border border-gray-300 rounded-md p-2" required />
-          </div>
-          
-          {error && <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p>}
 
-          <button type="submit" disabled={busy} className="w-full bg-red-600 text-white p-2 rounded-md font-medium hover:bg-red-700 disabled:opacity-50">
-            {busy ? 'Authenticating...' : 'Access CRM'}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full border rounded-md p-2" placeholder="password123" />
+          </div>
+
+          {error && <div className="text-red-500 text-sm text-center bg-red-50 p-2 rounded">{error}</div>}
+
+          <button type="submit" disabled={loading} className="w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-700 transition font-semibold">
+            {loading ? 'Authenticating...' : 'Access CRM'}
           </button>
         </form>
       </div>
