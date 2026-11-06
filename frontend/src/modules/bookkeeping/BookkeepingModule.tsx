@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import styles from './components/bookkeeping.module.css';
 
 export const BookkeepingModule = () => {
   const [clients, setClients] = useState<any[]>([]);
@@ -22,7 +23,7 @@ export const BookkeepingModule = () => {
         <div className="p-4 border-b border-gray-100 bg-gray-50"><h2 className="font-bold text-gray-800">Clients</h2></div>
         <div className="flex-1 overflow-y-auto">
           {loading ? <p className="p-4 text-gray-500 text-sm">Loading...</p> : clients.map(c => (
-            <div key={c.id} onClick={() => setSelectedClient(c)} className={`p-4 border-b border-gray-100 cursor-pointer transition ${selectedClient?.id === c.id ? 'bg-indigo-50 border-l-4 border-indigo-500' : 'hover:bg-gray-50'}`}>
+            <div key={c.id} onClick={() => setSelectedClient(c)} className={`${styles.clientRow} ${selectedClient?.id === c.id ? styles.clientRowActive : ''}`}>
               <p className="font-medium text-gray-900">{c.name || 'Unnamed'}</p>
             </div>
           ))}
