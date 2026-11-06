@@ -52,3 +52,12 @@
 ## ⚠️ Pending Configurations
 - **Stripe:** Need to add `STRIPE_SECRET_KEY` and `STRIPE_PRICE_ID` in Render environment variables.
 - **Messaging:** The ChatWidget is currently mocked; it needs to be connected to the `/messages` endpoint using the logged-in user's ID.
+
+## ✅ RBAC Visual & Navigation Verification (Final)
+- Successfully implemented synchronous `localStorage` role reading in `AdminLayout.tsx`.
+- Verified role isolation in production:
+  - `TAX_BUSINESS` sees only Business Tax.
+  - `CREDIT_REPAIR` sees only Credit Repair.
+  - `BOOKKEEPING` sees only Bookkeeping.
+- ChatWidget is globally integrated and visible across all admin modules.
+- Sign out correctly redirects staff to `/staff-login` and clears session storage.
