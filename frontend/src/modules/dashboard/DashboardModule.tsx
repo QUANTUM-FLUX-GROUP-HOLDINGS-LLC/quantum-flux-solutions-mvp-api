@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { UploadCard } from './components/UploadCard';
-import { apiFetch } from '../shared/api';
+import { apiFetch, apiDownload } from '../shared/api';
 
 type Dispute = {
   id: string;
@@ -59,6 +59,7 @@ export const DashboardModule = () => {
                   <th className="py-3 px-4">Account</th>
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4">Date</th>
+                  <th className="py-3 px-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -72,6 +73,18 @@ export const DashboardModule = () => {
                       </span>
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-500">{new Date(d.createdAt).toLocaleDateString()}</td>
+                    <td className="py-3 px-4">
+                      {d.status === 'PENDING' ? (
+                        <span className="text-xs text-gray-400">Pending review</span>
+                      ) : (
+                        <button 
+                          onClick={() => apiDownload(`/credit/my-disputes/${d.id}/pdf`, `Dispute_${d.id}.pdf`).catch(e => alert(e.message))}
+                          className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+                        >
+                          Download Letter
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
