@@ -1,27 +1,24 @@
-import { Controller, Post, Body, Req, Headers, BadRequestException, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, Req, UseGuards, Headers, RawBodyRequest } from '@nestjs/common';
 import { StripeService } from './stripe.service';
-import Stripe from 'stripe';
-import type { RawBodyRequest } from '@nestjs/common';
-import type { Request } from 'express';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 
 @Controller('stripe')
 export class StripeController {
   constructor(private readonly stripeService: StripeService) {}
 
+  @Post('checkout')
   @UseGuards(JwtAuthGuard)
-  @Post('create-checkout-session')
-  async createCheckoutSession(@Req() req: any) {
-    // Usamos el userId del JWT
-    return this.stripeService.createCheckoutSession(req.user.userId);
+  async checkout(@Req() req: any, @Body('serviceId') serviceId: string) {
+    // req.user.id viene del JWT
+    const userId = req.user.id || req.user.sub || req.user.userId;
+    return this.stripeService.createCheckoutSession(userId, serviceId);
   }
 
   @Post('webhook')
-  async handleWebhook(
+  async webhook(
     @Headers('stripe-signature') signature: string,
-    @Req() req: RawBodyRequest<Request>,
+    @Req() req: RawBodyRequest<Request>
   ) {
-    if (!req.rawBody) throw new BadRequestException('Missing raw body');
-    return this.stripeService.handleWebhook(signature, req.rawBody);
+    return this.stripeService.handleWebhook(signature, req.rawBody!);
   }
 }

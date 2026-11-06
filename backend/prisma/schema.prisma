@@ -18,6 +18,7 @@ model Customer {
   stripeId   String?     @unique
   status     String      @default("PENDING")
   role       String      @default("CLIENT")
+  services   String[]    @default([])
   createdAt  DateTime    @default(now())
   documents  Document[]
   disputes   Dispute[]

@@ -1,97 +1,77 @@
-import { Injectable, InternalServerErrorException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import Stripe from 'stripe';
 import { PrismaService } from '../../core/database/prisma.service';
-import { MailService } from '../../mail/mail.service';
 
 @Injectable()
 export class StripeService {
   private stripe: Stripe;
+  private readonly logger = new Logger(StripeService.name);
 
-  constructor(private prisma: PrismaService, private mail: MailService) {
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock');
+  constructor(private prisma: PrismaService) {
+    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock', {
+      apiVersion: '2024-11-20.acacia' as any,
+    });
   }
 
-  // Crear sesión de pago usando el ID de nuestro DB, no el de Stripe
-  async createCheckoutSession(userId: string): Promise<any> {
-    const user = await this.prisma.customer.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User not found');
+  async createCheckoutSession(customerId: string, serviceId: string) {
+    const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
+    if (!customer) throw new Error('Customer not found');
 
-    let stripeCustomerId = user.stripeId;
+    // Si usas las claves reales, esto crea la sesión de pago real
+    const session = await this.stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: { name: `Quantum Flux - ${serviceId.toUpperCase()}` },
+          unit_amount: 14900, // $149.00
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: `${process.env.FRONTEND_URL}/dashboard?success=true`,
+      cancel_url: `${process.env.FRONTEND_URL}/dashboard?canceled=true`,
+      client_reference_id: customer.id,
+      metadata: { serviceId }
+    });
 
-    // Si el usuario no tiene un ID de Stripe (ej. se registró por Auth), lo creamos
-    if (!stripeCustomerId) {
-      if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('...')) {
-        stripeCustomerId = 'cus_mock_' + Math.random().toString(36).substring(7);
-      } else {
-        const stripeCustomer = await this.stripe.customers.create({ email: user.email, name: user.name });
-        stripeCustomerId = stripeCustomer.id;
-      }
-      await this.prisma.customer.update({
-        where: { id: user.id },
-        data: { stripeId: stripeCustomerId },
-      });
-    }
-
-    if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('...')) {
-      return { url: 'https://example.com/checkout-mock-success' };
-    }
-
-    try {
-      const session = await this.stripe.checkout.sessions.create({
-        customer: stripeCustomerId,
-        mode: 'subscription',
-        line_items: [
-          {
-            price_data: {
-              currency: 'usd',
-              product_data: { name: 'Full Credit Repair Plan' },
-              unit_amount: 14900,
-              recurring: { interval: 'month' },
-            },
-            quantity: 1,
-          },
-        ],
-        success_url: `${process.env.FRONTEND_URL || 'http://localhost:3001'}/dashboard?success=true`,
-        cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:3001'}/dashboard?canceled=true`,
-      } as any);
-      return { url: session.url };
-    } catch (error: any) {
-      throw new InternalServerErrorException(error.message);
-    }
+    return { url: session.url };
   }
 
   async handleWebhook(signature: string, payload: Buffer) {
-    let event: Stripe.Event;
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-    if (!webhookSecret) return { received: true };
+    let event: Stripe.Event;
 
     try {
-      event = this.stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+      if (webhookSecret && webhookSecret !== 'whsec_...') {
+        event = this.stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+      } else {
+        // Fallback para desarrollo local sin webhook real
+        event = JSON.parse(payload.toString());
+      }
     } catch (err: any) {
-      throw new BadRequestException(`Webhook Error: ${err.message}`);
+      this.logger.error(`Webhook Error: ${err.message}`);
+      throw new Error(`Webhook Error: ${err.message}`);
     }
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
-      const customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
+      const customerId = session.client_reference_id;
+      const serviceId = session.metadata?.serviceId;
 
-      if (!customerId) return { received: true };
-
-      console.log(`✅ Payment successful for customer: ${customerId}. Updating DB...`);
-
-      try {
-        const updatedUser = await this.prisma.customer.update({
-          where: { stripeId: customerId },
-          data: { status: 'ACTIVE' },
-        });
-        console.log(`🎉 DB Updated successfully for ${customerId}`);
-
-        // Enviar correo de pago exitoso
-        await this.mail.sendPaymentSuccessEmail(updatedUser.email, updatedUser.name);
-        
-      } catch (error) {
-        console.log(`⚠️ Customer ${customerId} not found in DB.`);
+      if (customerId && serviceId) {
+        const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
+        if (customer) {
+          // Añadimos el servicio pagado a la lista del cliente
+          const currentServices = customer.services || [];
+          if (!currentServices.includes(serviceId)) {
+            await this.prisma.customer.update({
+              where: { id: customerId },
+              data: { services: { push: serviceId } }
+            });
+            this.logger.log(`✅ Servicio ${serviceId} activado para el cliente ${customerId}`);
+          }
+        }
       }
     }
     return { received: true };
