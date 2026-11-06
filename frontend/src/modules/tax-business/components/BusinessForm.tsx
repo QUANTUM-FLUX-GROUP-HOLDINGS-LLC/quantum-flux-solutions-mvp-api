@@ -1,3 +1,4 @@
+import styles from './tax-business.module.css';
 export const BusinessForm = ({ client, formData, setFormData, onSave, saving }: any) => {
   if (!client) return <div className="h-full flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-200 rounded-lg">Select a corporate client from the list on the left.</div>;
 
@@ -39,7 +40,7 @@ export const BusinessForm = ({ client, formData, setFormData, onSave, saving }: 
           <label className="block text-xs font-semibold text-gray-500 mb-1 uppercase">Internal Notes</label>
           <textarea value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} rows={3} className="w-full border border-gray-300 rounded-md p-2 text-sm bg-gray-50" placeholder="Add any additional notes here..."></textarea>
         </div>
-        <button onClick={onSave} disabled={saving} className="w-full mt-6 bg-indigo-600 text-white py-2 rounded-md font-medium hover:bg-indigo-700 disabled:opacity-50">{saving ? 'Saving...' : 'Save Business Profile'}</button>
+        <button onClick={onSave} disabled={saving} className={styles.saveButton}>{saving ? 'Saving...' : 'Save Business Profile'}</button>
       </div>
     </div>
   );
