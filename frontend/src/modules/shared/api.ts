@@ -22,9 +22,10 @@ export async function apiDownload(path: string, fallbackName: string) {
     headers: t ? { Authorization: `Bearer ${t}` } : {},
   });
   if (!res.ok) {
-    throw new Error(res.status === 409
-      ? 'Aún pendiente de revisión por el equipo.'
-      : `No se pudo descargar (${res.status}).`);
+    if (res.status === 409) throw new Error('Aún pendiente de revisión por el equipo.');
+    // Intentar leer el mensaje de error que envía el backend
+    const errorText = await res.text().catch(() => '');
+    throw new Error(errorText || `No se pudo descargar (${res.status}).`);
   }
   const blob = await res.blob();
   const cd = res.headers.get('Content-Disposition') || '';
