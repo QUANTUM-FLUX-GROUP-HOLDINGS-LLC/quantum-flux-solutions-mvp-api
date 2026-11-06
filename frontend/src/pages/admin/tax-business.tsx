@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AdminLayout } from '../../../modules/shared/AdminLayout';
+import { AdminLayout } from '../../modules/shared/AdminLayout';
 
 export default function TaxBusinessModule() {
   const [customers, setCustomers] = useState<any[]>([]);
