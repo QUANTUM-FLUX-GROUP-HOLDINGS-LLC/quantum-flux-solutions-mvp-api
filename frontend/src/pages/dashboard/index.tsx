@@ -18,7 +18,7 @@ export default function DashboardHub() {
   // ─── LÓGICA DE SUSCRIPCIONES (MOCK) ──────────────────────────────────────────
   // Cuando integremos Stripe, esto se leerá del JWT o de la DB: user.services
   // Por ahora, simulamos que el cliente SOLO ha pagado Credit Repair.
-  const activeServices = user?.services || ['credit-repair']; 
+  const activeServices = user?.services || []; 
 
   const allServices = [
     { id: 'credit-repair', name: 'Credit Repair', desc: 'View dispute status and upload credit reports.' },

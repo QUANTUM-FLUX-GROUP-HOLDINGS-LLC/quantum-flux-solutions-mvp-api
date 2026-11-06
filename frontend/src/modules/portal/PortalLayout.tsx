@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 
 export const PortalLayout = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
-  const [activeServices, setActiveServices] = useState<string[]>(['credit-repair']);
+  const [activeServices, setActiveServices] = useState<string[]>([]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
