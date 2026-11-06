@@ -43,3 +43,12 @@
 - ✅ **Public Login (`/login`):** Correctly blocks Staff emails and displays a redirect message to the dedicated portal.
 - ✅ **Staff Login (`/staff-login`):** Dedicated portal works and loads the role selector.
 - ✅ **RBAC Enforcement (`/admin/tax-business`):** Logged in as `TAX_BUSINESS`. Sidebar correctly isolates the module. Client list fetches successfully from the backend.
+
+## 🚀 Features Implemented (Options B, C, D)
+1. **Option B (Inbox/Messaging):** Added `Message` model in Prisma. Created `MessagesModule` in NestJS. Added a floating `ChatWidget` in the frontend (currently mocked, ready to be connected to the API).
+2. **Option C (Tax PDF Generator):** Installed `pdfkit` in the backend. Added a `GET /tax-business/:id/pdf` endpoint to generate and download a PDF summary of the Business Tax Profile. Added the "Download PDF" button in the frontend.
+3. **Option D (Stripe Integration):** Installed Stripe SDK. Created `StripeModule` and `POST /stripe/checkout` endpoint to generate a Checkout Session for the $149/mo subscription. Added a "Pay $149/mo" button in the Client Dashboard.
+
+## ⚠️ Pending Configurations
+- **Stripe:** Need to add `STRIPE_SECRET_KEY` and `STRIPE_PRICE_ID` in Render environment variables.
+- **Messaging:** The ChatWidget is currently mocked; it needs to be connected to the `/messages` endpoint using the logged-in user's ID.
