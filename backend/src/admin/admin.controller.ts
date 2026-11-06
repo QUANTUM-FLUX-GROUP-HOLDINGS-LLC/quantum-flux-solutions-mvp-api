@@ -24,8 +24,4 @@ export class AdminController {
   @Get('documents/:id/download')
   @Roles('ADMIN', 'CREDIT_REPAIR', 'TAX_PERSONAL', 'TAX_BUSINESS', 'BOOKKEEPING')
   downloadDocument(@Param('id') id: string) { return this.admin.createSignedUrl(id); }
-
-  @Get('customers/:id/tax')
-  @Roles('ADMIN', 'TAX_PERSONAL', 'TAX_BUSINESS')
-  getCustomerTaxProfile(@Param('id') id: string) { return this.admin.getCustomerTaxProfile(id); }
 }

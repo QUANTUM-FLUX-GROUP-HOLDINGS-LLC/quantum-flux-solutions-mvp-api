@@ -36,8 +36,4 @@ export class AdminService {
     if (error) throw new Error(error.message);
     return { url: data.signedUrl, expiresIn: 600, fileName: doc.fileName };
   }
-
-  async getCustomerTaxProfile(customerId: string) {
-    return this.prisma.taxProfile.findUnique({ where: { customerId } });
-  }
 }

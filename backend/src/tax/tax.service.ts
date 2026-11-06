@@ -1,25 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../core/database/prisma.service';
 
 @Injectable()
 export class TaxService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async getProfile(customerId: string) {
-    let profile = await this.prisma.taxProfile.findUnique({
-      where: { customerId },
-    });
-
-    // Si no existe, creamos uno por defecto
-    if (!profile) {
-      profile = await this.prisma.taxProfile.create({
-        data: { customerId },
-      });
-    }
-    return profile;
+    return this.prisma.taxProfile.findUnique({ where: { customerId } });
   }
 
-  async updateProfile(customerId: string, data: { filingStatus: string, dependents: number, income: number }) {
+  async updateProfile(customerId: string, data: any) {
     return this.prisma.taxProfile.upsert({
       where: { customerId },
       update: data,

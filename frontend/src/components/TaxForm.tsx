@@ -15,7 +15,7 @@ export function TaxForm({ token }: { token: string }) {
 
   async function fetchProfile() {
     try {
-      const res = await fetch(`${apiUrl}/tax`, {
+      const res = await fetch(`${apiUrl}/tax/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) setProfile(await res.json());
@@ -31,7 +31,7 @@ export function TaxForm({ token }: { token: string }) {
     setSuccess(false);
 
     try {
-      const res = await fetch(`${apiUrl}/tax`, {
+      const res = await fetch(`${apiUrl}/tax/profile`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
