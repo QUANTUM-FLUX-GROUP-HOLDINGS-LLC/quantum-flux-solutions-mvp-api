@@ -1,36 +1,40 @@
-import { Controller, Get, Post, Param, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Param, Res, UseGuards } from '@nestjs/common';
+import { Response } from 'express';
 import { TaxBusinessService } from './tax-business.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
-import { UpdateBusinessProfileDto } from './dto/update-business-profile.dto';
+import PDFDocument from 'pdfkit';
 
 @Controller('tax-business')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class TaxBusinessController {
-  constructor(private readonly taxBusiness: TaxBusinessService) {}
+  constructor(private readonly taxBusinessService: TaxBusinessService) {}
 
-  @Get('profile')
-  @Roles('CLIENT')
-  getMyProfile(@Req() req: any) {
-    return this.taxBusiness.getProfile(req.user.id);
-  }
+  @Get(':id/pdf')
+  async downloadPdf(@Param('id') id: string, @Res() res: Response) {
+    const profile = await this.taxBusinessService.findOne(id);
+    
+    if (!profile) {
+      return res.status(404).send('Profile not found');
+    }
 
-  @Post('profile')
-  @Roles('CLIENT')
-  updateMyProfile(@Req() req: any, @Body() body: UpdateBusinessProfileDto) {
-    return this.taxBusiness.updateProfile(req.user.id, body);
-  }
+    const doc = new PDFDocument();
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=tax-profile-${id}.pdf`);
 
-  @Get('customers/:id')
-  @Roles('ADMIN', 'TAX_BUSINESS')
-  getClientProfile(@Param('id') customerId: string) {
-    return this.taxBusiness.getProfile(customerId);
-  }
+    doc.pipe(res);
 
-  @Post('customers/:id')
-  @Roles('ADMIN', 'TAX_BUSINESS')
-  updateClientProfile(@Param('id') customerId: string, @Body() body: UpdateBusinessProfileDto) {
-    return this.taxBusiness.updateProfile(customerId, body);
+    // Header
+    doc.fontSize(20).text('Quantum Flux Solutions', { align: 'center' });
+    doc.fontSize(14).text('Business Tax Profile Summary', { align: 'center' });
+    doc.moveDown();
+
+    // Body
+    doc.fontSize(12).text(`Entity Name: ${profile.entityName || 'N/A'}`);
+    doc.text(`EIN: ${profile.ein || 'N/A'}`);
+    doc.text(`Entity Type: ${profile.entityType || 'N/A'}`);
+    doc.text(`Gross Revenue: $${profile.grossRevenue || 0}`);
+    doc.text(`Employees: ${profile.employees || 0}`);
+    doc.moveDown();
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`);
+
+    doc.end();
   }
 }
