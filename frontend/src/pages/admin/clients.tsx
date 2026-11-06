@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { AdminLayout } from '../../modules/shared/AdminLayout';
 import { apiFetch } from '../../modules/shared/api';
 import toast from 'react-hot-toast';
+import { ClientDocuments } from '../../modules/admin/components/ClientDocuments';
 
 export default function ClientsPage() {
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
   useEffect(() => {
     apiFetch<any[]>('/admin/clients')
@@ -21,9 +23,6 @@ export default function ClientsPage() {
           <h1 className="text-2xl font-bold text-gray-900">All Clients</h1>
           <p className="text-gray-500 mt-1">View and manage all registered clients across services.</p>
         </div>
-        <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-semibold shadow-sm transition">
-          + Add Client
-        </button>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
@@ -39,8 +38,7 @@ export default function ClientsPage() {
           </thead>
           <tbody className="divide-y divide-gray-200 text-sm">
             {loading ? (
-              // SKELETON LOADER
-              [...Array(5)].map((_, i) => (
+              [...Array(3)].map((_, i) => (
                 <tr key={i} className="animate-pulse">
                   <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-3/4"></div></td>
                   <td className="px-6 py-4"><div className="h-4 bg-gray-200 rounded w-full"></div></td>
@@ -50,14 +48,14 @@ export default function ClientsPage() {
                 </tr>
               ))
             ) : clients.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                  No clients found. Click "Add Client" to create one.
-                </td>
-              </tr>
+              <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-500">No clients found.</td></tr>
             ) : (
               clients.map((client) => (
-                <tr key={client.id} className="hover:bg-gray-50 transition-colors">
+                <tr 
+                  key={client.id} 
+                  className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedClientId === client.id ? 'bg-indigo-50/50' : ''}`}
+                  onClick={() => setSelectedClientId(selectedClientId === client.id ? null : client.id)}
+                >
                   <td className="px-6 py-4 font-medium text-gray-900">{client.name}</td>
                   <td className="px-6 py-4 text-gray-500">{client.email}</td>
                   <td className="px-6 py-4">
@@ -93,6 +91,14 @@ export default function ClientsPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Panel de Documentos del Cliente Seleccionado */}
+      {selectedClientId && (
+        <div className="mt-8 bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-800 mb-4">Documents for Selected Client</h2>
+          <ClientDocuments clientId={selectedClientId} />
+        </div>
+      )}
     </AdminLayout>
   );
 }

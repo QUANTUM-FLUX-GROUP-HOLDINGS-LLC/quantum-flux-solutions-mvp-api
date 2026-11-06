@@ -1,39 +1,27 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
-import { PrismaService } from '../core/database/prisma.service';
-import * as bcrypt from 'bcrypt';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { AdminService } from './admin.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('admin')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN')
 export class AdminController {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly adminService: AdminService) {}
+
+  @Get('metrics')
+  getMetrics() {
+    return this.adminService.getDashboardMetrics();
+  }
 
   @Get('clients')
-  async getAllClients(@Query('role') role: string) {
-    const whereClause = role === 'ADMIN' ? {} : { role: 'CLIENT' };
-    return this.prisma.customer.findMany({ where: whereClause, orderBy: { createdAt: 'desc' }, select: { id: true, email: true, name: true, role: true, createdAt: true } });
+  listClients() {
+    return this.adminService.listAllCustomers();
   }
 
-  @Post('clients')
-  async createClient(@Body() body: any) {
-    return this.prisma.customer.create({
-      data: {
-        name: body.name,
-        email: body.email,
-        password: 'password123', // En producción usar bcrypt
-        role: 'CLIENT'
-      }
-    });
-  }
-
-  @Post('staff')
-  async createStaff(@Body() body: any) {
-    const hashedPassword = await bcrypt.hash('password123', 10);
-    return this.prisma.customer.create({
-      data: {
-        name: body.name,
-        email: body.email,
-        password: hashedPassword,
-        role: body.role
-      }
-    });
+  @Get('clients/:id/documents')
+  listClientDocuments(@Param('id') id: string) {
+    return this.adminService.listDocuments(id);
   }
 }
