@@ -5,14 +5,24 @@ export default function TaxBusinessModule() {
   const [clients, setClients] = useState<any[]>([]);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [role, setRole] = useState('USER');
 
   useEffect(() => {
+    const storedRole = localStorage.getItem('role') || 'USER';
+    setRole(storedRole);
+
     const fetchClients = async () => {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://quantum-flux-api-npru.onrender.com'}/admin/clients`);
         if (res.ok) {
           const data = await res.json();
-          setClients(Array.isArray(data) ? data : []);
+          
+          // LÓGICA CLAVE: Si es ADMIN, ve todo. Si es staff, solo ve CLIENTES.
+          const filteredData = storedRole === 'ADMIN' 
+            ? data 
+            : data.filter((u: any) => u.role === 'CLIENT');
+            
+          setClients(Array.isArray(filteredData) ? filteredData : []);
         }
       } catch (error) {
         console.error("Error fetching clients:", error);
@@ -35,7 +45,7 @@ export default function TaxBusinessModule() {
             {loading ? (
               <p className="p-4 text-gray-400 text-sm">Loading clients...</p>
             ) : clients.length === 0 ? (
-              <p className="p-4 text-gray-400 text-sm">No clients found.</p>
+              <p className="p-4 text-gray-400 text-sm">No clients assigned yet.</p>
             ) : (
               clients.map((client) => (
                 <div 
