@@ -1,13 +1,15 @@
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'https://quantum-flux-api-npru.onrender.com';
+import { getStoragePrefix } from './storage'; // <-- IMPORTACIÓN LIMPIA
 
-const token = () => (typeof window === 'undefined' ? null : localStorage.getItem('token'));
+export const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+
+const token = () => (typeof window === 'undefined' ? null : localStorage.getItem(getStoragePrefix() + 'token'));
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   const t = token();
   if (t) headers.set('Authorization', `Bearer ${t}`);
-  if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json');
+  if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json'); 
   const res = await fetch(`${API_URL}${path}`, { ...init, headers });
   if (!res.ok) {
     const msg = await res.text().catch(() => '');
@@ -23,7 +25,6 @@ export async function apiDownload(path: string, fallbackName: string) {
   });
   if (!res.ok) {
     if (res.status === 409) throw new Error('Aún pendiente de revisión por el equipo.');
-    // Intentar leer el mensaje de error que envía el backend
     const errorText = await res.text().catch(() => '');
     throw new Error(errorText || `No se pudo descargar (${res.status}).`);
   }

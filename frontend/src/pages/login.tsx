@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../modules/shared/auth-context';
+import { getStoragePrefix } from '../modules/shared/storage';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -34,8 +35,8 @@ export default function LoginPage() {
         throw new Error('Invalid email or password');
       }
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem(getStoragePrefix() + 'token', data.token);
+      localStorage.setItem(getStoragePrefix() + 'user', JSON.stringify(data.user));
       
       await refreshEntitlements();
       router.push('/dashboard');

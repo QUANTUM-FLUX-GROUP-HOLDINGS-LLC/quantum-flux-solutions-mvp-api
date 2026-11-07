@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { apiFetch } from './api';
+import { getStoragePrefix } from './storage'; // <-- IMPORTACIÓN LIMPIA
 
 export type AuthUser = {
   id: string;
@@ -24,7 +25,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const readStoredUser = (): AuthUser | null => {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = localStorage.getItem('user');
+    const raw = localStorage.getItem(getStoragePrefix() + 'user');
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return { ...parsed, services: Array.isArray(parsed.services) ? parsed.services : [] };
@@ -34,7 +35,7 @@ const readStoredUser = (): AuthUser | null => {
 };
 
 const hasToken = () =>
-  typeof window !== 'undefined' && !!localStorage.getItem('token');
+  typeof window !== 'undefined' && !!localStorage.getItem(getStoragePrefix() + 'token');
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -47,6 +48,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
       return;
     }
+    
+    setLoading(true);
     try {
       const fresh = await apiFetch<AuthUser>('/auth/me');
       const normalized: AuthUser = {
@@ -54,11 +57,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         services: Array.isArray(fresh.services) ? fresh.services : [],
       };
       setUser(normalized);
-      localStorage.setItem('user', JSON.stringify(normalized));
+      localStorage.setItem(getStoragePrefix() + 'user', JSON.stringify(normalized));
     } catch {
-      // Token invalid or backend unreachable — clear and force re-login.
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      localStorage.removeItem(getStoragePrefix() + 'token');
+      localStorage.removeItem(getStoragePrefix() + 'user');
       setUser(null);
     } finally {
       setLoading(false);
@@ -66,14 +68,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signOut = useCallback(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem(getStoragePrefix() + 'token');
+    localStorage.removeItem(getStoragePrefix() + 'user');
     setUser(null);
-    router.push('/login');
+    
+    if (typeof window !== 'undefined' && window.location.hostname.startsWith('staff')) {
+      router.push('/staff-login');
+    } else {
+      router.push('/login');
+    }
   }, [router]);
 
   useEffect(() => {
-    // Paint fast from localStorage to avoid a lock-flash, then refresh from server.
     const stored = readStoredUser();
     if (stored) setUser(stored);
     void refreshEntitlements();
