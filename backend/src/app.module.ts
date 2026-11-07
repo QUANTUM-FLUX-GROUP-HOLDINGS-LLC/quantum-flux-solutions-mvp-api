@@ -9,11 +9,12 @@ import { MailModule } from './mail/mail.module';
 import { CreditModule } from './credit/credit.module';
 import { TaxModule } from './tax/tax.module';
 import { TaxBusinessModule } from './tax-business/tax-business.module';
-import { MessagesModule } from './messages/messages.module';
+import { BookkeepingModule } from './bookkeeping/bookkeeping.module';
 import { StripeModule } from './integrations/stripe/stripe.module';
+import { MessagesModule } from './messages/messages.module';
 
 @Module({
-  imports: [PrismaModule, 
+  imports: [
     PrismaModule,
     AuthModule,
     StorageModule,
@@ -23,6 +24,7 @@ import { StripeModule } from './integrations/stripe/stripe.module';
     CreditModule,
     TaxModule,
     TaxBusinessModule,
+    BookkeepingModule,
     StripeModule,
     MessagesModule,
   ],
