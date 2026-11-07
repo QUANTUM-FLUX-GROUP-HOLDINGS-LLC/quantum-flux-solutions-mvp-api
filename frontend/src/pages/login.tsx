@@ -29,8 +29,6 @@ export default function LoginPage() {
       if (!res.ok) throw new Error('Invalid email or password');
       const data = await res.json();
 
-      // STRICT SECURITY: If they are not a CLIENT, deny access with a generic error.
-      // We do not mention "Staff portal" to avoid leaking information.
       if (data.user.role !== 'CLIENT') {
         throw new Error('Invalid email or password');
       }
@@ -69,6 +67,12 @@ export default function LoginPage() {
           <button type="submit" disabled={busy} className="w-full bg-[#0f4c81] text-white p-2 rounded-md font-medium hover:bg-[#0a3a63] disabled:opacity-50">
             {busy ? 'Logging in...' : 'Log In'}
           </button>
+
+          <div className="text-center mt-3">
+            <Link href="/forgot-password" className="text-sm text-gray-500 hover:text-[#0f4c81] hover:underline">
+              Forgot your password?
+            </Link>
+          </div>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-600">
