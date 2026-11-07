@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../modules/shared/auth-context';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { refreshEntitlements } = useAuth(); // Traemos la función del contexto
+  const { refreshEntitlements } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -27,17 +28,16 @@ export default function LoginPage() {
       if (!res.ok) throw new Error('Invalid email or password');
       const data = await res.json();
 
-      // Bloquear acceso a Staff desde el portal público
+      // STRICT SECURITY: If they are not a CLIENT, deny access with a generic error.
+      // We do not mention "Staff portal" to avoid leaking information.
       if (data.user.role !== 'CLIENT') {
-        throw new Error('Staff members must log in through the dedicated portal.');
+        throw new Error('Invalid email or password');
       }
 
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       
-      // 🔥 EL FIX: Despertamos al AuthContext ANTES de ir al dashboard
       await refreshEntitlements();
-      
       router.push('/dashboard');
 
     } catch (err: any) {
@@ -51,7 +51,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md border border-gray-100">
         <h2 className="text-2xl font-bold text-center text-[#1a1f36] mb-2">Quantum Flux Solutions</h2>
-        <p className="text-center text-gray-500 mb-6">Welcome back, Client</p>
+        <p className="text-center text-gray-500 mb-6">Client Portal</p>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
@@ -71,7 +71,7 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-600">
-          Don't have an account? <a href="/register" className="text-blue-600 font-medium hover:underline">Sign up</a>
+          Don't have an account? <Link href="/register" className="text-blue-600 font-medium hover:underline">Sign up</Link>
         </p>
       </div>
     </div>
