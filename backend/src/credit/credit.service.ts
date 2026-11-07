@@ -14,7 +14,7 @@ export class CreditService {
 
   async listDisputes() {
     return this.prisma.dispute.findMany({
-      include: { customer: { select: { name: true, email: true } } },
+      include: { customer: { select: { id: true, name: true, email: true } } },
       orderBy: { createdAt: 'desc' },
     });
   }

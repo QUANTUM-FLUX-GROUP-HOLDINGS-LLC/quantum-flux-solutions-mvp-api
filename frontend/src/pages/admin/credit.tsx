@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { AdminLayout } from '../../modules/shared/AdminLayout';
 import { apiFetch } from '../../modules/shared/api';
+import { ClientDocuments } from '../../modules/admin/components/ClientDocuments';
 import toast from 'react-hot-toast';
-import { Plus, CheckCircle, Clock, Loader2, X } from 'lucide-react';
+import { Plus, CheckCircle, Clock, Loader2, X, FolderOpen } from 'lucide-react';
 
 type Dispute = {
   id: string;
@@ -11,7 +12,7 @@ type Dispute = {
   accountNumber?: string;
   status: string;
   createdAt: string;
-  customer: { name: string; email: string };
+  customer: { id: string; name: string; email: string };
 };
 
 export default function AdminCreditPage() {
@@ -20,6 +21,7 @@ export default function AdminCreditPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [docsClient, setDocsClient] = useState<{ id: string; name: string } | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -48,7 +50,6 @@ export default function AdminCreditPage() {
   const fetchClients = async () => {
     try {
       const data = await apiFetch<any[]>('/admin/clients');
-      // Filter only clients (not admins/staff)
       setClients(data.filter(c => c.role === 'CLIENT'));
     } catch (err) {
       console.error('Failed to load clients');
@@ -75,7 +76,7 @@ export default function AdminCreditPage() {
       toast.success('Dispute created successfully');
       setIsModalOpen(false);
       setFormData({ customerId: '', bureau: 'Equifax', accountName: '', accountNumber: '' });
-      fetchDisputes(); // Refresh list
+      fetchDisputes();
     } catch (err: any) {
       toast.error(err.message || 'Failed to create dispute');
     } finally {
@@ -85,14 +86,13 @@ export default function AdminCreditPage() {
 
   const handleResolve = async (id: string) => {
     if (!confirm('Mark this dispute as RESOLVED? This will allow the client to download the PDF letter.')) return;
-    
     try {
       await apiFetch(`/credit/disputes/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({ status: 'RESOLVED' }),
       });
       toast.success('Dispute resolved!');
-      fetchDisputes(); // Refresh list
+      fetchDisputes();
     } catch (err) {
       toast.error('Failed to update dispute');
     }
@@ -119,9 +119,6 @@ export default function AdminCreditPage() {
         ) : disputes.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
             <p className="mb-4">No disputes found in the system.</p>
-            <button onClick={() => setIsModalOpen(true)} className="text-indigo-600 font-medium hover:underline">
-              Create the first dispute
-            </button>
           </div>
         ) : (
           <table className="w-full text-left border-collapse">
@@ -158,13 +155,20 @@ export default function AdminCreditPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-gray-500">{new Date(d.createdAt).toLocaleDateString()}</td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right flex justify-end gap-3">
+                    <button
+                      onClick={() => setDocsClient({ id: d.customer.id, name: d.customer.name })}
+                      className="text-gray-500 hover:text-gray-800 font-medium text-sm flex items-center gap-1"
+                      title="View Client Documents"
+                    >
+                      <FolderOpen className="w-4 h-4" /> Files
+                    </button>
                     {d.status === 'PENDING' && (
                       <button
                         onClick={() => handleResolve(d.id)}
                         className="text-indigo-600 hover:text-indigo-900 font-medium text-sm"
                       >
-                        Mark Resolved
+                        Resolve
                       </button>
                     )}
                   </td>
@@ -203,7 +207,7 @@ export default function AdminCreditPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Credit Bureau</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Credit Bureau</label> 
                 <select
                   value={formData.bureau}
                   onChange={(e) => setFormData({ ...formData, bureau: e.target.value })}
@@ -255,6 +259,26 @@ export default function AdminCreditPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para ver Documentos del Cliente */}
+      {docsClient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden">
+            <div className="flex justify-between items-center p-5 border-b border-gray-200 bg-gray-50">
+              <div>
+                <h3 className="text-lg font-bold text-gray-800">Client Files</h3>
+                <p className="text-sm text-gray-500">{docsClient.name}</p>
+              </div>
+              <button onClick={() => setDocsClient(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 max-h-[70vh] overflow-y-auto">
+              <ClientDocuments clientId={docsClient.id} />
+            </div>
           </div>
         </div>
       )}
