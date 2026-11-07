@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Get, Param, Post, Req, UploadedFile,
+  Body, Controller, Get, Param, Post, Req, Query, UploadedFile,
   UseGuards, UseInterceptors, BadRequestException
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -24,26 +24,20 @@ export class DocumentsController {
     @Body('category') category?: DocumentCategory,
   ) {
     if (!file) throw new BadRequestException('File is required');
-
-    // Buscamos el ID en las propiedades más comunes del JWT
     const customerId = req.user.id || req.user.sub || req.user.userId;
-    
-    if (!customerId) {
-      throw new BadRequestException('No se pudo identificar al usuario desde el token');
-    }
+    if (!customerId) throw new BadRequestException('No user ID in token');
 
     try {
       return await this.documents.upload(customerId, file, category);
     } catch (error: any) {
-      // Devolvemos el error real para que el frontend no muestre un 500 genérico
-      throw new BadRequestException(error.message || 'Error al procesar el archivo');
+      throw new BadRequestException(error.message || 'Error processing file');
     }
   }
 
   @Get()
-  list(@Req() req: any) {
+  list(@Req() req: any, @Query('category') category?: DocumentCategory) {
     const customerId = req.user.id || req.user.sub || req.user.userId;
-    return this.documents.listForCustomer(customerId);
+    return this.documents.listForCustomer(customerId, category);
   }
 
   @Get(':id/download')

@@ -1,11 +1,5 @@
-import {
-  Injectable,
-  BadRequestException,
-  NotFoundException,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { extname } from 'path';
-import { randomUUID } from 'crypto';
 import { PrismaService } from '../core/database/prisma.service';
 import { SupabaseService } from '../storage/supabase.service';
 import { DocumentCategory } from '@prisma/client';
@@ -16,67 +10,49 @@ const ALLOWED = new Set(['application/pdf', 'image/png', 'image/jpeg']);
 @Injectable()
 export class DocumentsService {
   constructor(
-    private readonly prisma: PrismaService,
-    private readonly supabase: SupabaseService,
+    private prisma: PrismaService,
+    private supabase: SupabaseService,
   ) {}
 
-  async upload(
-    customerId: string,
-    file: Express.Multer.File,
-    category: DocumentCategory = DocumentCategory.CREDIT_REPORT,
-  ) {
+  async upload(customerId: string, file: Express.Multer.File, category?: DocumentCategory) {
     if (!file) throw new BadRequestException('File is required');
     if (file.size > MAX_BYTES) throw new BadRequestException('File exceeds 10MB');
     if (!ALLOWED.has(file.mimetype)) throw new BadRequestException('Unsupported file type');
 
-    const ext = extname(file.originalname) || '.pdf';
-    const key = `${customerId}/${randomUUID()}${ext}`;
+    const fileExt = extname(file.originalname);
+    const storagePath = `${customerId}/${Date.now()}-${Math.random().toString(36).substring(7)}${fileExt}`;
 
-    const { error } = await this.supabase.storage.upload(key, file.buffer, {
-      contentType: file.mimetype,
-      upsert: false,
-    });
-    if (error) throw new InternalServerErrorException(`Upload failed: ${error.message}`);
+    await this.supabase.uploadFile('documents', storagePath, file.buffer, file.mimetype);
 
-    const doc = await this.prisma.document.create({
+    return this.prisma.document.create({
       data: {
         customerId,
         fileName: file.originalname,
-        storagePath: key,
+        storagePath,
         mimeType: file.mimetype,
         sizeBytes: file.size,
-        category,
+        category: category || DocumentCategory.CREDIT_REPORT,
       },
     });
-    return this.toDto(doc);
   }
 
-  async listForCustomer(customerId: string) {
-    const docs = await this.prisma.document.findMany({
-      where: { customerId },
+  async listForCustomer(customerId: string, category?: DocumentCategory) {
+    return this.prisma.document.findMany({
+      where: {
+        customerId,
+        ...(category ? { category } : {}),
+      },
       orderBy: { createdAt: 'desc' },
     });
-    return docs.map((d) => this.toDto(d));
   }
 
-  async createSignedUrl(customerId: string, id: string) {
-    const doc = await this.prisma.document.findFirst({ where: { id, customerId } });
+  async createSignedUrl(customerId: string, documentId: string) {
+    const doc = await this.prisma.document.findFirst({
+      where: { id: documentId, customerId },
+    });
     if (!doc) throw new NotFoundException('Document not found');
 
-    const { data, error } = await this.supabase.storage.createSignedUrl(doc.storagePath, 600);
-    if (error) throw new InternalServerErrorException(error.message);
-
-    return { url: data.signedUrl, expiresIn: 600, fileName: doc.fileName };
-  }
-
-  private toDto(d: any) {
-    return {
-      id: d.id,
-      fileName: d.fileName,
-      mimeType: d.mimeType,
-      sizeBytes: d.sizeBytes,
-      category: d.category,
-      createdAt: d.createdAt,
-    };
+    const url = await this.supabase.getSignedUrl('documents', doc.storagePath);
+    return { url };
   }
 }
