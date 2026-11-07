@@ -61,7 +61,6 @@ export const AdminLayout = ({ children }: { children: React.ReactNode }) => {
           {/* WORKSPACE */}
           <div>
             <p className="px-3 text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Workspace</p>
-            <NavItem href="/admin/letter-library" icon={FileText} label="Letter Library" />
             <NavItem href="/admin/settings" icon={Settings} label="Settings" />
           </div>
         </div>
