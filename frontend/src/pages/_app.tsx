@@ -12,43 +12,43 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading || typeof window === 'undefined') return;
 
-    const hostname = window.location.hostname;
-    const isStaffDomain = hostname.startsWith('staff');
+    const isStaffDomain = window.location.hostname.startsWith('staff');
     const path = router.pathname;
 
-    // Ignoramos archivos estáticos y API
     if (path.startsWith('/_next') || path.startsWith('/api') || path === '/_error' || path === '/404') return;
 
     if (isStaffDomain) {
-      // 🛑 DOMINIO DE STAFF (staff.local)
-      
-      // 1. Si hay un cliente logueado, lo expulsamos
+      // Staff domain: only staff allowed
       if (user && user.role === 'CLIENT') {
-        signOut(); // Borra el token
+        signOut();
         router.replace('/staff-login');
         return;
       }
-      // 2. Si no hay usuario, lo mandamos al login de staff
       if (!user && path !== '/staff-login') {
         router.replace('/staff-login');
         return;
       }
-      // 3. Si es Staff y está en una ruta de cliente, lo mandamos a su dashboard
-      if (user && !path.startsWith('/admin') && path !== '/staff-login') {
+      if (user && path === '/staff-login') {
         router.replace('/admin/dashboard');
         return;
       }
-
+      if (user && !path.startsWith('/admin')) {
+        router.replace('/admin/dashboard');
+        return;
+      }
     } else {
-      // 🛑 DOMINIO DE CLIENTE (localhost o client.local)
-
-      // Si intenta entrar a rutas de admin o al login de staff, lo rebotamos
+      // Client domain: block admin routes and staff-login
       if (path.startsWith('/admin') || path === '/staff-login') {
         router.replace('/login');
         return;
       }
+      // Unauthenticated users on /dashboard/* get kicked to /login
+      if (!user && path.startsWith('/dashboard')) {
+        router.replace('/login');
+        return;
+      }
     }
-  }, [router.pathname, user, loading, signOut, router]);
+  }, [router.pathname, user, loading, router, signOut]);
 
   if (loading) {
     return (
@@ -67,12 +67,7 @@ export default function App({ Component, pageProps }: AppProps) {
       <RouteGuard>
         <Component {...pageProps} />
       </RouteGuard>
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          style: { background: '#333', color: '#fff', borderRadius: '8px' },
-        }}
-      />
+      <Toaster position="top-right" toastOptions={{ style: { background: '#333', color: '#fff', borderRadius: '8px' } }} />
     </AuthProvider>
   );
 }
