@@ -12,7 +12,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading || typeof window === 'undefined') return;
 
-    const isStaffDomain = window.location.hostname.startsWith('staff');
+    const isStaffDomain = window.location.hostname.startsWith('staff') || path.startsWith('/admin') || path === '/staff-login';
     const path = router.pathname;
 
     if (path.startsWith('/_next') || path.startsWith('/api') || path === '/_error' || path === '/404') return;

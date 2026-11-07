@@ -8,7 +8,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
   
   app.enableCors({
-    origin: '*', // Permitimos todos en local. En producción se restringe.
+    origin: process.env.FRONTEND_URL || '*', // Usa la URL de Vercel en producción
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
