@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { useRouter } from 'next/router';
-import { Lock } from 'lucide-react';
-import { useAuth } from '../shared/auth-context';
-import { ChatWidget } from '../shared/ChatWidget'; // <-- IMPORT
+import { Settings,  useRouter } from 'next/router';
+import { Settings,  Lock } from 'lucide-react';
+import { Settings,  useAuth } from '../shared/auth-context';
+import { Settings,  ChatWidget } from '../shared/ChatWidget'; // <-- IMPORT
 
 export const PortalLayout = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
@@ -40,7 +40,11 @@ export const PortalLayout = ({ children }: { children: React.ReactNode }) => {
             );
           })}
         </nav>
-        <button onClick={signOut} className="mt-12 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md">Sign Out</button>
+                  <Link href="/dashboard/settings" className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${router.pathname === '/dashboard/settings' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}>
+            <Settings className="w-5 h-5 opacity-80" />
+            <span className="text-sm font-medium flex-1">Settings</span>
+          </Link>
+<button onClick={signOut} className="mt-12 w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md">Sign Out</button>
       </aside>
       <main className="flex-1 p-8 relative">
         <div className="max-w-5xl mx-auto">{children}</div>
