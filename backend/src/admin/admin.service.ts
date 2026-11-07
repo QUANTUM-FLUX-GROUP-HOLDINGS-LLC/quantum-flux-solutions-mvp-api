@@ -18,7 +18,7 @@ export class AdminService {
 
   async listAllCustomers() {
     return this.prisma.customer.findMany({
-      select: { id: true, email: true, name: true, status: true, createdAt: true },
+      select: { id: true, email: true, name: true, status: true, createdAt: true, role: true, services: true },
     });
   }
 
@@ -32,8 +32,11 @@ export class AdminService {
   async createSignedUrl(documentId: string) {
     const doc = await this.prisma.document.findUnique({ where: { id: documentId } });
     if (!doc) throw new NotFoundException('Document not found');
-    const { data, error } = await this.supabase.storage.createSignedUrl(doc.storagePath, 600);
-    if (error) throw new Error(error.message);
-    return { url: data.signedUrl, expiresIn: 600, fileName: doc.fileName };
+    
+    // Ahora usamos el método wrapper que creamos en SupabaseService
+    const url = await this.supabase.getSignedUrl('documents', doc.storagePath);
+    
+    // Retornamos el mismo formato que esperaba el frontend
+    return { url, expiresIn: 86400, fileName: doc.fileName };
   }
 }
