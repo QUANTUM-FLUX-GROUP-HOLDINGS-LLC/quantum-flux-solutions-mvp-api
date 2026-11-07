@@ -12,8 +12,11 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading || typeof window === 'undefined') return;
 
-    const isStaffDomain = window.location.hostname.startsWith('staff') || path.startsWith('/admin') || path === '/staff-login';
     const path = router.pathname;
+    // Lógica corregida: detecta staff por dominio o por ruta (útil en Vercel)
+    const isStaffDomain = window.location.hostname.startsWith('staff') || 
+                          path.startsWith('/admin') || 
+                          path === '/staff-login';
 
     if (path.startsWith('/_next') || path.startsWith('/api') || path === '/_error' || path === '/404') return;
 
@@ -42,7 +45,6 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
         router.replace('/login');
         return;
       }
-      // Unauthenticated users on /dashboard/* get kicked to /login
       if (!user && path.startsWith('/dashboard')) {
         router.replace('/login');
         return;
