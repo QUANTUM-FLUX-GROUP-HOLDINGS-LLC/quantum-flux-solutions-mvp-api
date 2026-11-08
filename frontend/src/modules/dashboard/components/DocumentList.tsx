@@ -1,22 +1,59 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { apiFetch, apiDownload } from '../../shared/api';
 import toast from 'react-hot-toast';
-import { FileText, Download, Loader2 } from 'lucide-react';
+import { FileText, Download, Loader2, AlertCircle } from 'lucide-react';
+
+interface ClientDocument {
+  id: string;
+  fileName: string;
+  createdAt: string;
+}
 
 export const DocumentList = ({ category }: { category: string }) => {
-  const [docs, setDocs] = useState<any[]>([]);
+  const [docs, setDocs] = useState<ClientDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Asumiendo un endpoint GET /documents?category=...
-    apiFetch<any[]>(`/documents?category=${category}`)
-      .then(setDocs)
-      .catch(() => toast.error('Failed to load documents'))
-      .finally(() => setLoading(false));
+  const loadDocs = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiFetch<ClientDocument[]>(`/documents?category=${encodeURIComponent(category)}`);
+      setDocs(Array.isArray(data) ? data : []);
+    } catch {
+      setError('Could not load your documents.');
+      toast.error('Failed to load documents');
+    } finally {
+      setLoading(false);
+    }
   }, [category]);
 
+  useEffect(() => {
+    void loadDocs();
+  }, [loadDocs]);
+
   if (loading) {
-    return <div className="flex justify-center p-6"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>;
+    return (
+      <div className="flex justify-center p-6">
+        <Loader2 className="w-6 h-6 animate-spin text-gray-400" aria-label="Loading documents" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center p-6 bg-red-50 border border-red-200 rounded-lg">
+        <AlertCircle className="w-6 h-6 text-red-500 mx-auto mb-2" />
+        <p className="text-red-700 text-sm mb-3">{error}</p>
+        <button
+          type="button"
+          onClick={() => void loadDocs()}
+          className="text-sm font-semibold text-red-700 underline underline-offset-2 hover:text-red-800"
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
   if (docs.length === 0) {
@@ -44,10 +81,17 @@ export const DocumentList = ({ category }: { category: string }) => {
                 <FileText className="w-4 h-4 text-indigo-500" />
                 <span className="font-medium text-gray-800">{doc.fileName}</span>
               </td>
-              <td className="px-4 py-3 text-gray-500">{new Date(doc.createdAt).toLocaleDateString()}</td>
+              <td className="px-4 py-3 text-gray-500">
+                {new Date(doc.createdAt).toLocaleDateString()}
+              </td>
               <td className="px-4 py-3 text-right">
                 <button
-                  onClick={() => apiDownload(`/documents/${doc.id}/download`, doc.fileName).catch((e) => toast.error(e.message))}
+                  type="button"
+                  onClick={() =>
+                    apiDownload(`/documents/${doc.id}/download`, doc.fileName).catch((e) =>
+                      toast.error(e instanceof Error ? e.message : 'Download failed'),
+                    )
+                  }
                   className="text-indigo-600 hover:text-indigo-900 font-medium inline-flex items-center gap-1"
                 >
                   <Download className="w-4 h-4" /> Download

@@ -4,7 +4,6 @@ import { CreditRepairModule } from '../../modules/portal/credit-repair/CreditRep
 export default function CreditRepairPage() {
   return (
     <PortalLayout>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Credit Repair Workspace</h1>
       <CreditRepairModule />
     </PortalLayout>
   );

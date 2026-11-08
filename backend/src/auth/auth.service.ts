@@ -85,4 +85,57 @@ export class AuthService {
     });
     return { success: true };
   }
+
+  // ------------------------------------------------------------------
+  // Password reset flow.
+  //
+  // Stateless design: a short-lived signed JWT with `purpose: 'password-reset'`
+  // travels by email. No DB migration needed (no reset-token columns).
+  // Trade-off accepted for MVP: the token cannot be revoked, but expires in 15m.
+  // ------------------------------------------------------------------
+
+  async requestPasswordReset(email: string) {
+    const user = await this.prisma.customer.findUnique({ where: { email } });
+
+    // Same response either way so attackers cannot probe for registered emails.
+    if (user) {
+      const token = this.jwt.sign(
+        { sub: user.id, purpose: 'password-reset' },
+        { expiresIn: '15m' },
+      );
+
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+      const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+
+      await this.mail.sendPasswordResetEmail(user.email, user.name, resetUrl);
+    }
+
+    return { message: 'If the account exists, a reset link has been sent.' };
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    let payload: any;
+    try {
+      payload = this.jwt.verify(token);
+    } catch {
+      throw new UnauthorizedException('Invalid or expired reset link.');
+    }
+
+    // Reject session tokens (or anything else) repurposed as reset tokens.
+    if (payload.purpose !== 'password-reset') {
+      throw new UnauthorizedException('Invalid reset token.');
+    }
+
+    const user = await this.prisma.customer.findUnique({ where: { id: payload.sub } });
+    if (!user) throw new UnauthorizedException('Invalid or expired reset link.');
+
+    const hash = await bcrypt.hash(newPassword, 10);
+    await this.prisma.customer.update({
+      where: { id: user.id },
+      data: { password: hash },
+    });
+
+    return { message: 'Password updated. You can now log in.' };
+  }
+
 }

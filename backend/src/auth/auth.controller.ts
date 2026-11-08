@@ -20,6 +20,19 @@ export class AuthController {
     return this.authService.login(body.email, body.password);
   }
 
+  // Public by design: the user is logged out when requesting a reset link.
+  // The response is identical whether or not the account exists (no email enumeration).
+  @Post('forgot-password')
+  forgotPassword(@Body() body: any) {
+    return this.authService.requestPasswordReset(body.email);
+  }
+
+  // Public: consumes the one-time signed reset token issued above.
+  @Post('reset-password')
+  resetPassword(@Body() body: any) {
+    return this.authService.resetPassword(body.token, body.newPassword);
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   async getMe(@Req() req: any) {

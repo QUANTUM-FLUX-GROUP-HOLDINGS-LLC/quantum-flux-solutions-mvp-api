@@ -14,11 +14,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    // Buscamos el usuario y devolvemos su objeto completo (que ya incluye 'role')
+    // Tokens issued for a specific purpose (e.g. password-reset) must not
+    // work as session tokens, even though they are validly signed JWTs.
+    if (payload.purpose) {
+      throw new UnauthorizedException();
+    }
+
+    // Load the user and return the full object (which already includes 'role')
     const user = await this.prisma.customer.findUnique({
       where: { id: payload.sub || payload.id },
     });
     if (!user) throw new UnauthorizedException();
-    return user; 
+    return user;
   }
 }

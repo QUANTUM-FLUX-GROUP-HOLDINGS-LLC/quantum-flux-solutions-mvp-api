@@ -1,14 +1,26 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../core/database/prisma.service';
-import { CreateMessageDto } from './dto/create-message.dto';
+
+/** Input built by the controller: sender always comes from the session token. */
+export interface CreateMessageInput {
+  senderId: string;
+  receiverId: string;
+  content: string;
+}
 
 @Injectable()
 export class MessagesService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createMessageDto: CreateMessageDto) {
+  async create(input: CreateMessageInput) {
+    // Fields are mapped explicitly so Prisma resolves the unchecked
+    // create input variant instead of inferring against the DTO class.
     return this.prisma.message.create({
-      data: createMessageDto,
+      data: {
+        senderId: input.senderId,
+        receiverId: input.receiverId,
+        content: input.content,
+      },
     });
   }
 

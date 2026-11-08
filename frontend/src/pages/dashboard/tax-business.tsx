@@ -4,7 +4,6 @@ import { BusinessTaxModule } from '../../modules/portal/tax-business/BusinessTax
 export default function TaxBusinessPage() {
   return (
     <PortalLayout>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Business Tax Workspace</h1>
       <BusinessTaxModule />
     </PortalLayout>
   );

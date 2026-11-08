@@ -2,31 +2,60 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../shared/auth-context';
 import { ChatWidget } from '../shared/ChatWidget';
-import { LayoutDashboard, CreditCard, Briefcase, BookOpen, Settings, LogOut, Lock, ArrowLeft } from 'lucide-react';
+import {
+  LayoutDashboard,
+  CreditCard,
+  Briefcase,
+  BookOpen,
+  Settings,
+  LogOut,
+  Lock,
+  ArrowLeft,
+  type LucideIcon,
+} from 'lucide-react';
+
+// Maps a portal route to the service entitlement required to access it.
+const PROTECTED_ROUTES: Record<string, string> = {
+  '/dashboard/credit-repair': 'credit-repair',
+  '/dashboard/tax-personal': 'tax-personal',
+  '/dashboard/tax-business': 'tax-business',
+  '/dashboard/bookkeeping': 'bookkeeping',
+};
+
+interface NavItemProps {
+  href: string;
+  icon: LucideIcon;
+  label: string;
+  isLocked?: boolean;
+}
 
 export const PortalLayout = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const { user, services, signOut, loading } = useAuth();
 
-  if (loading || !user) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0f4c81]" />
+      </div>
+    );
+  }
 
-  // Mapeo de ruta a servicio requerido
-  const protectedRoutes: Record<string, string> = {
-    '/dashboard/credit-repair': 'credit-repair',
-    '/dashboard/tax-personal': 'tax-personal',
-    '/dashboard/tax-business': 'tax-business',
-    '/dashboard/bookkeeping': 'bookkeeping',
-  };
+  const requiredService = PROTECTED_ROUTES[router.pathname];
+  const isBlocked = Boolean(requiredService) && !services.includes(requiredService);
 
-  const currentPath = router.pathname;
-  const requiredService = protectedRoutes[currentPath];
-  const isBlocked = requiredService && !services.includes(requiredService);
-
-  const NavItem = ({ href, icon: Icon, label, isLocked }: { href: string, icon: any, label: string, isLocked?: boolean }) => (
-    <Link href={href} className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${router.pathname.startsWith(href) ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}>
+  const NavItem = ({ href, icon: Icon, label, isLocked }: NavItemProps) => (
+    <Link
+      href={href}
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${
+        router.pathname.startsWith(href)
+          ? 'bg-indigo-50 text-indigo-700 font-semibold'
+          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+      }`}
+    >
       <Icon className="w-5 h-5 opacity-80" />
       <span className="text-sm font-medium flex-1">{label}</span>
-      {isLocked && <Lock className="w-4 h-4 text-gray-400" />}
+      {isLocked && <Lock className="w-4 h-4 text-gray-400" aria-label="Locked" />}
     </Link>
   );
 
@@ -38,7 +67,7 @@ export const PortalLayout = ({ children }: { children: React.ReactNode }) => {
           <span className="text-lg font-bold text-gray-900 tracking-tight">Quantum Flux</span>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-2">
+        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-2">
           <div className="mb-4">
             <p className="px-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Overview</p>
             <NavItem href="/dashboard" icon={LayoutDashboard} label="Dashboard" />
@@ -52,10 +81,14 @@ export const PortalLayout = ({ children }: { children: React.ReactNode }) => {
             <NavItem href="/dashboard/tax-business" icon={Briefcase} label="Business Tax" isLocked={!services.includes('tax-business')} />
             <NavItem href="/dashboard/bookkeeping" icon={BookOpen} label="Bookkeeping" isLocked={!services.includes('bookkeeping')} />
           </div>
-        </div>
+        </nav>
 
         <div className="p-4 border-t border-gray-200">
-          <button onClick={signOut} className="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-md transition text-sm">
+          <button
+            type="button"
+            onClick={signOut}
+            className="w-full flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 rounded-md transition text-sm"
+          >
             <LogOut className="w-4 h-4" /> Sign Out
           </button>
         </div>
@@ -72,8 +105,8 @@ export const PortalLayout = ({ children }: { children: React.ReactNode }) => {
               <p className="text-gray-500 mb-8 max-w-md mx-auto">
                 You do not have an active subscription for this service. Please return to the dashboard to unlock it.
               </p>
-              <Link 
-                href="/dashboard" 
+              <Link
+                href="/dashboard"
                 className="inline-flex items-center gap-2 bg-[#0f4c81] text-white px-6 py-3 rounded-md font-semibold hover:bg-[#0a3a63] transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" /> Back to Dashboard

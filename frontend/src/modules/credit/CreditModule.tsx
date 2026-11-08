@@ -1,49 +1,59 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { CreditMetrics } from './components/CreditMetrics';
 import { ClientDirectory } from './components/ClientDirectory';
 import { NewClientModal } from './components/NewClientModal';
-import { useAuth } from '../shared/auth-context';
+import { apiFetch } from '../shared/api';
+import toast from 'react-hot-toast';
 
+export interface AdminClient {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  createdAt?: string;
+}
 
 export const CreditModule = () => {
-  const { user } = useAuth();
-  const [clients, setClients] = useState<any[]>([]);
+  const [clients, setClients] = useState<AdminClient[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const fetchClients = async () => {
+  const fetchClients = useCallback(async () => {
     setLoading(true);
     try {
-        const role = user?.role || 'USER';
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://quantum-flux-api-npru.onrender.com'}/admin/clients?role=${role}`);
-      if (res.ok) {
-        const data = await res.json();
-        setClients(Array.isArray(data) ? data : []);
-      }
+      const data = await apiFetch<AdminClient[]>('/admin/clients');
+      setClients(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error("Error fetching clients:", error);
+      console.error('Error fetching clients:', error);
+      toast.error('Failed to load clients');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchClients();
-  }, []);
+    void fetchClients();
+  }, [fetchClients]);
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="flex justify-between items-end mb-6">
+      <div className="flex justify-between items-end mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">All Clients</h1>
           <p className="text-gray-500 text-sm mt-1">Search, filter, and open client workspaces.</p>
         </div>
-        <button onClick={() => setIsModalOpen(true)} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition">+ New Client</button>
+        <button
+          type="button"
+          onClick={() => setIsModalOpen(true)}
+          className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition"
+        >
+          + New Client
+        </button>
       </div>
-      
+
       <CreditMetrics clients={clients} />
       <ClientDirectory clients={clients} loading={loading} />
-      
+
       <NewClientModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onRefresh={fetchClients} />
     </div>
   );
