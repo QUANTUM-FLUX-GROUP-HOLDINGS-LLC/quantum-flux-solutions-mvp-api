@@ -1,77 +1,65 @@
 # Quantum Flux Solutions - Fintech MVP
 
-Monorepo para Credit Repair, Taxes (Personal & Business), y Bookkeeping services (U.S. Only).
+Monorepo for Credit Repair, Taxes (Personal & Business), and Bookkeeping services (U.S. Only).
 
-## 🏗️ Arquitectura del Proyecto (CRÍTICO LEER)
-Este proyecto sigue una **Arquitectura Dirigida por Características (Feature-Driven)**.
-*   `backend/`: NestJS con módulos separados (`src/credit`, `src/tax-business`, etc.). Prisma ORM para la base de datos.
-*   `frontend/`: Next.js (Pages Router). 
-    *   `src/pages/`: Solo contiene "wrappers" de 9 líneas para el enrutamiento.
-    *   `src/modules/`: Toda la lógica de negocio, componentes y CSS de cada módulo vive aquí de forma aislada.
-    *   **REGLA DE ORO:** No crear archivos monolíticos. Si vas a cambiar la vista de Tax Business, hazlo en `src/modules/tax-business/`.
+## Architecture (READ FIRST)
+This project follows a **Feature-Driven Architecture**.
+*   `backend/`: NestJS with separate modules (`src/credit`, `src/letters`,
+    `src/tax-business`, etc.). Prisma ORM.
+*   `frontend/`: Next.js (Pages Router).
+    *   `src/pages/`: Only thin ~9-line wrappers for routing.
+    *   `src/modules/`: All business logic, components and CSS per module.
+    *   **GOLDEN RULE:** No monolithic files. To change the Tax Business view,
+        edit `src/modules/tax-business/`.
 
----
+## Getting started from scratch
 
-## 🚀 Cómo levantar el sistema desde cero
+### Prerequisites
+*   Node.js (v20+), pnpm, Git
+*   A PostgreSQL database (Supabase)
 
-### Requisitos Previos
-*   Node.js (v20 o superior)
-*   Git
-*   Una base de datos PostgreSQL (ej. Supabase)
+### Step 1: Environment variables
+*   `backend/.env`: real Supabase `DATABASE_URL` (and Stripe keys).
+*   `frontend/.env.local`: locally set `NEXT_PUBLIC_API_URL="http://localhost:3001/api"`.
 
-### Paso 1: Configurar Variables de Entorno
-Copia los archivos de ejemplo y edítalos con tus credenciales reales.
-```bash
-cp backend/.env.example backend/.env
-cp frontend/.env.local.example frontend/.env.local
-```
-*   **`backend/.env`**: Debes colocar aquí tu URL real de Supabase en `DATABASE_URL` y tus llaves de Stripe.
-*   **`frontend/.env.local`**: Si estás en local, déjalo como `NEXT_PUBLIC_API_URL="http://localhost:3001"`.
-
-### Paso 2: Opción A - Levantar automáticamente (Recomendado)
-Hemos creado un script de arranque que instala, migra, siembra y levanta ambos servidores de una vez:
-```bash
-chmod +x start.sh
-./start.sh
-```
-
-### Paso 2: Opción B - Levantar manualmente (Paso a paso)
-Si prefieres hacerlo manualmente o el script falla, ejecuta estos comandos en dos terminales separadas.
-
+### Step 2: Run manually (two terminals)
 **Terminal 1 (Backend):**
-```bash
-cd backend
-npm install
-npx prisma generate
-npx prisma db push
-npx ts-node prisma/seed.ts  # Crea los usuarios de prueba
-npm run start:dev           # Levanta el backend en http://localhost:3001
-```
+*   `cd backend`
+*   `pnpm install`
+*   `npx prisma generate`
+*   `npx prisma migrate deploy` (NEVER `db push`, see notes)
+*   `node seed-letters.mjs` (seeds the 3 letter templates)
+*   `npm run start:dev` (http://localhost:3001)
 
 **Terminal 2 (Frontend):**
-```bash
-cd frontend
-npm install
-npm run dev                 # Levanta el frontend en http://localhost:3000
-```
+*   `cd frontend`
+*   `pnpm install`
+*   `npm run dev` (http://localhost:3000)
 
----
+## Authentication model
+A single unified login page (`/login`) serves every role:
+*   `CLIENT` accounts land on `/dashboard` (client portal).
+*   Staff roles (`ADMIN`, `CREDIT_REPAIR`, ...) land on `/admin/dashboard`.
+*   The former `/staff-login` page was removed; `/admin/*` routes still block
+    CLIENT accounts (the route guard signs them out).
 
-## 🧪 Usuarios de Prueba
-El script de `seed.ts` crea los siguientes usuarios. Todos tienen la contraseña: **`password123`**
+## Test data (development only)
+`prisma/seed.ts` creates local dev users with password `password123`
+(`admin@test.com`, `credit@test.com`, `client1@test.com`, ...). These accounts
+DO NOT exist in production - the production database is kept clean
+(only the real admin account + seeded letter templates).
 
-| Rol | Email | Acceso |
-| :--- | :--- | :--- |
-| **Admin** | `admin@test.com` | `/staff-login` |
-| **Credit Repair** | `credit@test.com` | `/staff-login` |
-| **Personal Tax** | `tax@test.com` | `/staff-login` |
-| **Business Tax** | `business@test.com` | `/staff-login` |
-| **Bookkeeping** | `bookkeeper@test.com` | `/staff-login` |
-| **Cliente Real** | `client1@test.com` | `/login` |
-
----
-
-## 🛡️ Notas para Desarrolladores / IA
-1.  **No tocar Prisma sin consenso:** Si necesitas agregar una tabla o campo, actualiza `schema.prisma`, corre `npx prisma db push` y actualiza `seed.ts` inmediatamente.
-2.  **Mantener el aislamiento:** Cualquier nuevo componente de UI debe ir dentro de su respectivo `src/modules/[modulo]/components/`.
-3.  **Variables de Entorno:** Nunca subas archivos `.env` a GitHub. Usa siempre los `.example`.
+## Notes for developers / AI agents
+1.  **Schema changes:** update `schema.prisma`, hand-author the migration SQL,
+    apply with `npx prisma migrate deploy`. Do NOT use `prisma migrate dev`
+    against Supabase (pooled `directUrl` breaks the shadow database) and do NOT
+    use `db push` (bypasses migration history). Update `prisma/seed.ts`.
+2.  **Inspect the schema before writing DB scripts:** run
+    `grep '^model' prisma/schema.prisma` first. Wrap destructive scripts in a
+    Prisma `$transaction` so failures roll back cleanly.
+3.  **Typecheck before committing:** chain commands
+    (`npx tsc --noEmit && git commit ...`).
+4.  **Isolation:** new UI components belong in `src/modules/[module]/components/`.
+5.  **Environment variables:** never commit `.env` files; keep `.example` files
+    up to date.
+6.  **Language:** repository code, comments and docs are English-only.
