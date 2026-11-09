@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 import { AdminLayout } from '../../modules/shared/AdminLayout';
 import { apiFetch } from '../../modules/shared/api';
 import { ClientDocuments } from '../../modules/admin/components/ClientDocuments';
@@ -21,6 +22,15 @@ type Dispute = {
 
 export default function AdminCreditPage() {
   const [activeTab, setActiveTab] = useState<'disputes' | 'letters' | 'clients'>('disputes');
+  const router = useRouter();
+
+  // Deep-link support: the module sidebar links carry ?tab= (router.isReady
+  // guards the async query resolution of the Pages Router).
+  useEffect(() => {
+    if (!router.isReady) return;
+    const t = router.query.tab;
+    if (t === 'disputes' || t === 'letters' || t === 'clients') setActiveTab(t);
+  }, [router.isReady, router.query.tab]);
   
   const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [clients, setClients] = useState<any[]>([]);
