@@ -13,7 +13,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     if (loading || typeof window === 'undefined') return;
 
     const path = router.pathname;
-    // Lógica corregida: detecta staff por dominio o por ruta (útil en Vercel)
+    // Fixed logic: detect staff by domain or by route (useful on Vercel)
     const isStaffDomain = window.location.hostname.startsWith('staff') || 
                           path.startsWith('/admin') || 
                           path === '/staff-login';

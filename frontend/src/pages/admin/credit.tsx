@@ -138,7 +138,7 @@ export default function AdminCreditPage() {
 
   return (
     <AdminLayout>
-      {/* Sub-Menú del Módulo */}
+      {/* Module sub-menu */}
       <div className="mb-6 border-b border-gray-200">
         <div className="flex gap-6">
           <button
@@ -168,7 +168,7 @@ export default function AdminCreditPage() {
         </div>
       </div>
 
-      {/* Contenido de la Pestaña Activa */}
+      {/* Active tab content */}
       {activeTab === 'letters' ? (
         <div className="h-[calc(100vh-14rem)]">
           <LetterLibraryModule />
@@ -369,7 +369,7 @@ export default function AdminCreditPage() {
             </div>
           )}
 
-          {/* Modal para ver Documentos del Cliente */}
+          {/* Client documents viewer modal */}
           {docsClient && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
               <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden">

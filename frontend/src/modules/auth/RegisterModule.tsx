@@ -23,10 +23,10 @@ export const RegisterModule = () => {
       localStorage.setItem('token', res.token);
       localStorage.setItem('user', JSON.stringify(res.user));
       
-      // Si el registro es exitoso, lo mandamos directo al dashboard
+      // On successful registration, go straight to the dashboard
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Error al crear la cuenta. Intenta de nuevo.');
+      setError(err.message || 'Error creating the account. Please try again.');
     } finally {
       setLoading(false);
     }

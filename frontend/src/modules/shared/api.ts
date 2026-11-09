@@ -1,4 +1,4 @@
-import { getStoragePrefix } from './storage'; // <-- IMPORTACIÓN LIMPIA
+import { getStoragePrefix } from './storage';
 
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
@@ -27,9 +27,9 @@ export async function apiDownload(path: string, fallbackName: string) {
     headers: t ? { Authorization: `Bearer ${t}` } : {},
   });
   if (!res.ok) {
-    if (res.status === 409) throw new Error('Aún pendiente de revisión por el equipo.');
+    if (res.status === 409) throw new Error('Still pending review by the team.');
     const errorText = await res.text().catch(() => '');
-    throw new Error(errorText || `No se pudo descargar (${res.status}).`);
+    throw new Error(errorText || `Download failed (${res.status}).`);
   }
   const blob = await res.blob();
   const cd = res.headers.get('Content-Disposition') || '';

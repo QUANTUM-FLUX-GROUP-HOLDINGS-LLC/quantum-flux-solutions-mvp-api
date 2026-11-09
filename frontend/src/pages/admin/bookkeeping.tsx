@@ -29,7 +29,7 @@ export default function AdminBookkeepingPage() {
       </div>
 
       <div className="flex gap-6 items-start">
-        {/* Lista de clientes */}
+        {/* Client list */}
         <div className="w-1/3 bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
           <div className="p-4 border-b border-gray-200 bg-gray-50">
             <h2 className="font-semibold text-gray-700">Clients with Bookkeeping</h2>
@@ -59,7 +59,7 @@ export default function AdminBookkeepingPage() {
           )}
         </div>
 
-        {/* Panel de documentos del cliente */}
+        {/* Client documents panel */}
         <div className="flex-1 bg-white border border-gray-200 rounded-xl shadow-sm min-h-[400px]">
           {!selectedClient ? (
             <div className="h-full flex flex-col items-center justify-center p-12 text-gray-400">

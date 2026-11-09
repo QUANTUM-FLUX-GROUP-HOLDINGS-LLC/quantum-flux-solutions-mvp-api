@@ -18,7 +18,7 @@ export const SetupGuideModule = () => {
 
   const handleAction = (stepId: number) => {
     if (stepId === 1) setIsInviteModalOpen(true);
-    // Aquí puedes agregar la lógica para los demás pasos
+    // Add logic for the remaining steps here
   };
 
   return (
