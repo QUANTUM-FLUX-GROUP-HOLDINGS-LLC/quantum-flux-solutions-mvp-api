@@ -80,3 +80,31 @@ Sequence of findings during verification:
   related records) was purged in a single transaction after verification,
   consistent with the cycle 011 decision: production starts clean with only the
   `support@` ADMIN account.
+
+## Cycle addendum: purge execution, README rewrite, final lessons
+
+**Purge outcome (verified):** the transactional purge removed TWO test clients,
+not one: `test-e2e@quantumfluxsolutions.com` AND `crud-test@test.com` (a residue
+of a CRUD endpoint test earlier the same day), plus 1 dispute. Schema note:
+there is no `DisputeFile` model (attachments live in `Document`), and `Message`
+has no `customerId` - it filters by `senderId`/`receiverId`. Final counts:
+customers 1 (only the `support@` ADMIN account), disputes/documents/messages 0.
+
+**README rewritten** (commit `b6a7079`): auth model documented (unified `/login`
+with role-based redirect, `/staff-login` removed), migration workflow
+(`migrate deploy`, never `db push` / `migrate dev` vs Supabase), test-data
+policy (dev-only seed accounts, production kept clean), English-only convention,
+and the operational notes below. Commit `6c538ec` claimed the purge before it
+was executed; it became accurate once the purge succeeded in the same session.
+
+**Additional lessons (6-8):**
+6. Run `grep '^model' prisma/schema.prisma` BEFORE writing any destructive DB
+   script - two failed purge attempts (nonexistent `disputeFile` model, wrong
+   `Message` filter) cost zero data thanks to `$transaction` rollbacks, but
+   diagnosis-first would have been one clean pass.
+7. Writing files via terminal: long heredoc pastes collapse line breaks and
+   corrupt files mid-stream (recovery: Ctrl+C, `git checkout -- <file>`).
+   Safe method: chained small `cat >>` blocks (~12 lines each), verified with
+   `head`/`tail` before committing.
+8. Every purge attempt must end in a global count verification
+   (`customer.count()` etc.) before declaring production clean.
