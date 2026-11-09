@@ -3,8 +3,11 @@ import { AdminLayout } from '../../modules/shared/AdminLayout';
 import { apiFetch } from '../../modules/shared/api';
 import { ClientDocuments } from '../../modules/admin/components/ClientDocuments';
 import { LetterLibraryModule } from '../../modules/letter-library/LetterLibraryModule';
+import { ClientDirectory } from '../../modules/credit/components/ClientDirectory';
+import { ClientFormModal } from '../../modules/credit/components/ClientFormModal';
+import type { AdminClient } from '../../modules/credit/CreditModule';
 import toast from 'react-hot-toast';
-import { Plus, CheckCircle, Clock, Loader2, X, FolderOpen, FileText, Scale } from 'lucide-react';
+import { Plus, CheckCircle, Clock, Loader2, X, FolderOpen, FileText, Scale, Users } from 'lucide-react';
 
 type Dispute = {
   id: string;
@@ -17,7 +20,7 @@ type Dispute = {
 };
 
 export default function AdminCreditPage() {
-  const [activeTab, setActiveTab] = useState<'disputes' | 'letters'>('disputes');
+  const [activeTab, setActiveTab] = useState<'disputes' | 'letters' | 'clients'>('disputes');
   
   const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [clients, setClients] = useState<any[]>([]);
@@ -25,6 +28,8 @@ export default function AdminCreditPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [docsClient, setDocsClient] = useState<{ id: string; name: string } | null>(null);
+  const [editingClient, setEditingClient] = useState<AdminClient | null>(null);
+  const [clientModal, setClientModal] = useState<'create' | 'edit' | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -56,6 +61,16 @@ export default function AdminCreditPage() {
       setClients(data.filter(c => c.role === 'CLIENT'));
     } catch (err) {
       console.error('Failed to load clients');
+    }
+  };
+
+  const handleDeleteClient = async (client: AdminClient) => {
+    try {
+      await apiFetch(`/admin/clients/${client.id}`, { method: 'DELETE' });
+      toast.success('Client deleted.');
+      fetchClients();
+    } catch (err: any) {
+      toast.error(err.message || 'Could not delete client.');
     }
   };
 
@@ -122,6 +137,14 @@ export default function AdminCreditPage() {
           >
             <FileText className="w-4 h-4" /> Letter Library
           </button>
+          <button
+            onClick={() => setActiveTab('clients')}
+            className={`pb-3 text-sm font-medium flex items-center gap-2 transition-colors border-b-2 ${
+              activeTab === 'clients' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Users className="w-4 h-4" /> Clients
+          </button>
         </div>
       </div>
 
@@ -130,6 +153,28 @@ export default function AdminCreditPage() {
         <div className="h-[calc(100vh-14rem)]">
           <LetterLibraryModule />
         </div>
+      ) : activeTab === 'clients' ? (
+        <>
+          <div className="mb-6 flex justify-between items-end">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Client Directory</h1>
+              <p className="text-gray-500 mt-1">Create, edit and remove client accounts.</p>
+            </div>
+            <button
+              onClick={() => { setEditingClient(null); setClientModal('create'); }}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-semibold shadow-sm transition flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> Add New Client
+            </button>
+          </div>
+
+          <ClientDirectory
+            clients={clients}
+            loading={loading}
+            onEdit={(client) => { setEditingClient(client); setClientModal('edit'); }}
+            onDelete={handleDeleteClient}
+          />
+        </>
       ) : (
         <>
           <div className="mb-6 flex justify-between items-end">
@@ -316,6 +361,15 @@ export default function AdminCreditPage() {
           )}
         </>
       )}
+
+      {/* Unified create/edit client modal */}
+      <ClientFormModal
+        isOpen={clientModal !== null}
+        mode={clientModal === 'edit' ? 'edit' : 'create'}
+        initial={editingClient ?? undefined}
+        onClose={() => { setClientModal(null); setEditingClient(null); }}
+        onRefresh={fetchClients}
+      />
     </AdminLayout>
   );
 }
