@@ -15,7 +15,7 @@ production share the same database, so this affects production directly.
    `prisma.customer.update({ where: { email }, data: { password: hash } })`,
    then `unset PW`.
 3. Verify: `POST /api/auth/login` must return the account with its staff role.
-4. Instruct the staff member to change the password via /     settings after
+4. Instruct the staff member to change the password via /settings after
    first login.
 
 ## Roadmap (not yet implemented)
