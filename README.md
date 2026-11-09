@@ -100,3 +100,12 @@ Agreed order of implementation (decided 2026-11-09):
    authenticates via `?token=` query param (EventSource cannot set
    headers). Upgrade candidate: single-use stream tickets exchanged for
    the JWT, to keep tokens out of access logs.
+
+### Staff recovery escalation (2026-11-09)
+
+Staff (non-CLIENT) forgot-password attempts are now escalated by email to
+`ADMIN_NOTIFY_EMAIL` so the admin can issue a temporary password per the
+runbook (`docs/runbooks/staff-password-recovery.md`). Set
+`ADMIN_NOTIFY_EMAIL` in Render (e.g. support@quantumfluxsolutions.com);
+without it the attempt is only logged. The endpoint response stays
+identical for all users (anti-enumeration).
