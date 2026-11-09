@@ -113,7 +113,13 @@ export const TaxBusinessModule = () => {
       const { apiFetch } = await import('../shared/api');
       await apiFetch(`/tax-business/${selectedClient.id}`, {
         method: 'POST',
-        body: JSON.stringify({ ...formData, hasEmployees: formData.hasEmployees === 'Yes' }),
+        body: JSON.stringify({
+          entityType: formData.entityType,
+          ein: formData.ein.trim() || undefined,
+          grossRevenue: Number(formData.grossRevenue) || 0,
+          hasEmployees: formData.hasEmployees === 'Yes',
+          notes: formData.notes,
+        }),
       });
       setSavedFor(selectedClient.id);
       void import('react-hot-toast').then(({ default: toast }) =>

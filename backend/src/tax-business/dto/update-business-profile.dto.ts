@@ -5,7 +5,7 @@ export class UpdateBusinessProfileDto {
   @IsOptional()
   entityType?: string;
 
-  // VALIDACIÓN ESTRICTA: 2 números, guion, 7 números
+  // Strict validation: 2 digits, hyphen, 7 digits.
   @IsString()
   @IsOptional()
   @Matches(/^\d{2}-\d{7}$/, { message: 'EIN must be in the format XX-XXXXXXX (e.g., 12-3456789)' })
@@ -18,4 +18,8 @@ export class UpdateBusinessProfileDto {
   @IsBoolean()
   @IsOptional()
   hasEmployees?: boolean;
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
 }

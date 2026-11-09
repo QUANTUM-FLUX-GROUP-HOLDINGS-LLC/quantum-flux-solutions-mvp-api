@@ -9,7 +9,7 @@ import { Roles } from '../auth/roles.decorator';
 export class TaxController {
   constructor(private readonly tax: TaxService) {}
 
-  // Ruta para el cliente: llenar sus propios datos
+  // Client route: fill in their own data
   @Get('profile')
   @Roles('CLIENT')
   getMyProfile(@Req() req: any) {
@@ -22,7 +22,7 @@ export class TaxController {
     return this.tax.updateProfile(req.user.id, body);
   }
 
-  // Ruta para el Staff (Admin o Preparadores): ver datos de un cliente
+  // Staff route (Admin or preparers): view a client's data
   @Get('customers/:id')
   @Roles('ADMIN', 'TAX_PERSONAL', 'TAX_BUSINESS')
   getClientProfile(@Param('id') customerId: string) {

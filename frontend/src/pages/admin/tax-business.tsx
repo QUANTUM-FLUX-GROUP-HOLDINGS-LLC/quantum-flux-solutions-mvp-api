@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'react';
 import { AdminLayout } from '../../modules/shared/AdminLayout';
 import { ClientDocuments } from '../../modules/admin/components/ClientDocuments';
+import { TaxBusinessModule } from '../../modules/tax-business/TaxBusinessModule';
+import { useTabParam } from '../../hooks/use-tab-param';
 import { apiFetch } from '../../modules/shared/api';
 import toast from 'react-hot-toast';
-import { Building2, ChevronRight, Loader2 } from 'lucide-react';
+import { Building2, ChevronRight, FileText, Loader2 } from 'lucide-react';
+
+type BusinessTaxTab = 'documents' | 'profile';
+const BUSINESS_TAX_TABS: readonly BusinessTaxTab[] = ['documents', 'profile'];
 
 export default function AdminBusinessTaxPage() {
+  const [activeTab, changeTab] = useTabParam<BusinessTaxTab>('documents', BUSINESS_TAX_TABS);
   const [clients, setClients] = useState<any[]>([]);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [loadingClients, setLoadingClients] = useState(true);
@@ -25,9 +31,33 @@ export default function AdminBusinessTaxPage() {
     <AdminLayout>
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Business Tax Management</h1>
-        <p className="text-gray-500 mt-1">Review documents submitted by clients for business tax.</p>
+        <p className="text-gray-500 mt-1">Review profiles and documents for business tax clients.</p>
       </div>
 
+      <div className="mb-6 border-b border-gray-200">
+        <div className="flex gap-6">
+          <button
+            onClick={() => changeTab('documents')}
+            className={`pb-3 text-sm font-medium flex items-center gap-2 transition-colors border-b-2 ${
+              activeTab === 'documents' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <FileText className="w-4 h-4" /> Documents
+          </button>
+          <button
+            onClick={() => changeTab('profile')}
+            className={`pb-3 text-sm font-medium flex items-center gap-2 transition-colors border-b-2 ${
+              activeTab === 'profile' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Building2 className="w-4 h-4" /> Business Profile
+          </button>
+        </div>
+      </div>
+
+      {activeTab === 'profile' ? (
+        <TaxBusinessModule />
+      ) : (
       <div className="flex gap-6 items-start">
         <div className="w-1/3 bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
           <div className="p-4 border-b border-gray-200 bg-gray-50">
@@ -80,6 +110,7 @@ export default function AdminBusinessTaxPage() {
           )}
         </div>
       </div>
+      )}
     </AdminLayout>
   );
 }
