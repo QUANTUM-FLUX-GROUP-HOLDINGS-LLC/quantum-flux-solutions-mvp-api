@@ -103,6 +103,7 @@ export class MailService {
         <p>If you did not request this, you can safely ignore this email — your password will not change.</p>
       `,
     );
+  }
 
   // Non-critical: best-effort notice to the admin when a staff account
   // attempts self-service recovery. Never throws: the forgot-password
