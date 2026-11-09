@@ -16,7 +16,7 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Permitir peticiones sin origen (como Postman o apps móviles)
+      // Allow requests with no origin (e.g. Postman or mobile apps)
       if (!origin) return callback(null, true);
       
       // Si el origen está en la lista, o si estamos en desarrollo local
@@ -33,7 +33,7 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
-  // Hacer pública la carpeta uploads para descargas locales
+  // Serve uploads/ from local disk for local downloads (ephemeral on Render; see backlog)
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
 
   app.setGlobalPrefix('api');
