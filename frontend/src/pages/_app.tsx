@@ -15,8 +15,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     const path = router.pathname;
     // Fixed logic: detect staff by domain or by route (useful on Vercel)
     const isStaffDomain = window.location.hostname.startsWith('staff') || 
-                          path.startsWith('/admin') || 
-                          path === '/staff-login';
+                          path.startsWith('/admin');
 
     if (path.startsWith('/_next') || path.startsWith('/api') || path === '/_error' || path === '/404') return;
 
@@ -24,14 +23,14 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
       // Staff domain: only staff allowed
       if (user && user.role === 'CLIENT') {
         signOut();
-        router.replace('/staff-login');
+        router.replace('/login');
         return;
       }
-      if (!user && path !== '/staff-login') {
-        router.replace('/staff-login');
+      if (!user && path !== '/login') {
+        router.replace('/login');
         return;
       }
-      if (user && path === '/staff-login') {
+      if (user && path === '/login') {
         router.replace('/admin/dashboard');
         return;
       }
@@ -40,8 +39,8 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
         return;
       }
     } else {
-      // Client domain: block admin routes and staff-login
-      if (path.startsWith('/admin') || path === '/staff-login') {
+      // Client domain: block admin routes
+      if (path.startsWith('/admin')) {
         router.replace('/login');
         return;
       }
