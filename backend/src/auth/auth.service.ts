@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../core/database/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -6,6 +6,8 @@ import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private jwt: JwtService,
@@ -107,7 +109,16 @@ export class AuthService {
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
       const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
 
-      await this.mail.sendPasswordResetEmail(user.email, user.name, resetUrl);
+      // A provider outage must not turn this endpoint into an enumeration
+      // oracle (error for existing accounts, success for others). Log and move on.
+      try {
+        await this.mail.sendPasswordResetEmail(user.email, user.name, resetUrl);
+      } catch (err) {
+        const masked = user.email.replace(/(.{2}).+(@.+)/, '$1***$2');
+        this.logger.error(
+          `Password reset email failed for ${masked}: ${(err as Error).message}`,
+        );
+      }
     }
 
     return { message: 'If the account exists, a reset link has been sent.' };
