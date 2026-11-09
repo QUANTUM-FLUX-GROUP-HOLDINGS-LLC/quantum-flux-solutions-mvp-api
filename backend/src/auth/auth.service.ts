@@ -100,7 +100,16 @@ export class AuthService {
     const user = await this.prisma.customer.findUnique({ where: { email } });
 
     // Same response either way so attackers cannot probe for registered emails.
-    if (user) {
+    // Policy: self-service email reset is restricted to CLIENT accounts.
+    // Allowing staff (ADMIN and module roles) to recover by email means a
+    // compromised mailbox grants platform control. Staff recovery is a
+    // manual Super Admin flow (runbook: docs/runbooks/staff-password-recovery.md).
+    if (user && user.role !== 'CLIENT') {
+      const masked = user.email.replace(/(.{2}).+(@.+)/, '$1***$2');
+      this.logger.warn(
+        `Blocked self-service reset for staff account ${masked} (${user.role}); manual recovery required.`,
+      );
+    } else if (user) {
       const token = this.jwt.sign(
         { sub: user.id, purpose: 'password-reset' },
         { expiresIn: '15m' },
