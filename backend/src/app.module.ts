@@ -12,6 +12,7 @@ import { TaxBusinessModule } from './tax-business/tax-business.module';
 import { BookkeepingModule } from './bookkeeping/bookkeeping.module';
 import { StripeModule } from './integrations/stripe/stripe.module';
 import { MessagesModule } from './messages/messages.module';
+import { LettersModule } from './letters/letters.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { MessagesModule } from './messages/messages.module';
     BookkeepingModule,
     StripeModule,
     MessagesModule,
+    LettersModule,
   ],
   controllers: [AppController],
   providers: [],
