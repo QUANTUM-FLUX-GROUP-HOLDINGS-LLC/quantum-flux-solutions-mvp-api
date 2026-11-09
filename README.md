@@ -109,3 +109,15 @@ runbook (`docs/runbooks/staff-password-recovery.md`). Set
 `ADMIN_NOTIFY_EMAIL` in Render (e.g. support@quantumfluxsolutions.com);
 without it the attempt is only logged. The endpoint response stays
 identical for all users (anti-enumeration).
+
+### Patch-script lessons (cycle 013 incidents)
+
+- Lesson 11: an anchor must never span more than one functional brace;
+  if it includes a brace belonging to prior code, the replacement must
+  give that brace back explicitly (broken mail.service.ts, fixed c6ab07c).
+- Lesson 12: long pasted command chains fragmented during this cycle; a
+  commit ran despite tsc failing. Verification (tsc) and commit are now
+  separate commands run one block at a time until output is confirmed.
+- Lesson 13: when building an anchor from sed/cat output, count the
+  exact leading spaces (a 6-vs-4 space indent caused the first repair
+  attempt to ABORT; the anchor must be copied verbatim from the output).
