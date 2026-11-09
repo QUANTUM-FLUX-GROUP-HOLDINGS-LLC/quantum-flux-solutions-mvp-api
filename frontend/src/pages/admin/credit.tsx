@@ -8,7 +8,7 @@ import { ClientDirectory } from '../../modules/credit/components/ClientDirectory
 import { ClientFormModal } from '../../modules/credit/components/ClientFormModal';
 import type { AdminClient } from '../../modules/credit/CreditModule';
 import toast from 'react-hot-toast';
-import { Plus, CheckCircle, Clock, Loader2, X, FolderOpen, FileText, Scale, Users } from 'lucide-react';
+import { Plus, CheckCircle, Clock, Loader2, Send, X, FolderOpen, FileText, Scale, Users } from 'lucide-react';
 
 type Dispute = {
   id: string;
@@ -120,6 +120,20 @@ export default function AdminCreditPage() {
         body: JSON.stringify({ status: 'RESOLVED' }),
       });
       toast.success('Dispute resolved!');
+      fetchDisputes();
+    } catch (err) {
+      toast.error('Failed to update dispute');
+    }
+  };
+
+  const handleMarkSent = async (id: string) => {
+    if (!confirm('Mark this dispute as SENT to the bureau? This cannot go back to PENDING.')) return;
+    try {
+      await apiFetch(`/credit/disputes/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'SENT' }),
+      });
+      toast.success('Dispute marked as SENT.');
       fetchDisputes();
     } catch (err) {
       toast.error('Failed to update dispute');
@@ -250,6 +264,15 @@ export default function AdminCreditPage() {
                         >
                           <FolderOpen className="w-4 h-4" /> Files
                         </button>
+                        {d.status === 'PENDING' && (
+                          <button
+                            onClick={() => handleMarkSent(d.id)}
+                            className="text-gray-600 hover:text-gray-900 font-medium text-sm flex items-center gap-1"
+                            title="Mark as sent to the credit bureau"
+                          >
+                            <Send className="w-4 h-4" /> Mark as Sent
+                          </button>
+                        )}
                         {d.status === 'PENDING' && (
                           <button
                             onClick={() => handleResolve(d.id)}

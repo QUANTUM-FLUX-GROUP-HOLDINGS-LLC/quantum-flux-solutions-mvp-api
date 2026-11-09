@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FileText, Save, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { apiFetch } from '../shared/api';
 
 type Template = {
   id: string;
@@ -9,56 +10,58 @@ type Template = {
   content: string;
 };
 
-const INITIAL_TEMPLATES: Template[] = [
-  {
-    id: 'equifax',
-    bureau: 'Equifax',
-    title: 'Equifax Dispute Letter',
-    content: `To Whom It May Concern,\n\nI am writing to dispute the following information in my file. The items I dispute are also encircled on the attached copy of the report I received.\n\nThis item is inaccurate. I am requesting that you investigate this matter and remove the inaccurate information.\n\nSincerely,\n[CLIENT NAME]`,
-  },
-  {
-    id: 'experian',
-    bureau: 'Experian',
-    title: 'Experian Dispute Letter',
-    content: `To Whom It May Concern,\n\nI am writing to dispute the following information in my file.\n\nThis item is inaccurate. I am requesting that you investigate this matter and remove the inaccurate information.\n\nSincerely,\n[CLIENT NAME]`,
-  },
-  {
-    id: 'transunion',
-    bureau: 'TransUnion',
-    title: 'TransUnion Dispute Letter',
-    content: `To Whom It May Concern,\n\nI am writing to dispute the following information in my file.\n\nThis item is inaccurate. I am requesting that you investigate this matter and remove the inaccurate information.\n\nSincerely,\n[CLIENT NAME]`,
-  },
-];
-
 export const LetterLibraryModule = () => {
-  const [templates, setTemplates] = useState<Template[]>(INITIAL_TEMPLATES);
-  const [selectedId, setSelectedId] = useState<string>(INITIAL_TEMPLATES[0].id);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dirtyIds, setDirtyIds] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const selectedTemplate = templates.find((t) => t.id === selectedId) ?? templates[0];
-  const isDirty = dirtyIds.has(selectedTemplate.id);
+  const selectedTemplate = templates.find((t) => t.id === selectedId) ?? null;
+  const isDirty = selectedTemplate ? dirtyIds.has(selectedTemplate.id) : false;
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await apiFetch<Template[]>('/letters');
+        setTemplates(data);
+        setSelectedId(data[0]?.id ?? null);
+      } catch {
+        toast.error('Failed to load letter templates.');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (!selectedId) return;
     setTemplates((prev) =>
       prev.map((t) => (t.id === selectedId ? { ...t, content: e.target.value } : t)),
     );
     setDirtyIds((prev) => new Set(prev).add(selectedId));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!selectedTemplate || !isDirty) return;
     setSaving(true);
-    // TODO: persist templates via a backend endpoint (e.g. POST /letters).
-    // Currently simulated locally — the mock keeps this delay intentionally.
-    setTimeout(() => {
-      toast.success('Template saved (local draft).');
+    try {
+      const updated = await apiFetch<Template>(`/letters/${selectedTemplate.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ content: selectedTemplate.content }),
+      });
+      setTemplates((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
       setDirtyIds((prev) => {
         const next = new Set(prev);
-        next.delete(selectedId);
+        next.delete(updated.id);
         return next;
       });
+      toast.success('Template saved.');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save template.');
+    } finally {
       setSaving(false);
-    }, 800);
+    }
   };
 
   return (
@@ -89,6 +92,11 @@ export const LetterLibraryModule = () => {
               {dirtyIds.has(t.id) && <span className="w-2 h-2 bg-amber-500 rounded-full ml-auto shrink-0" />}
             </button>
           ))}
+          {!loading && templates.length === 0 && (
+            <p className="px-4 py-3 text-xs text-gray-500">
+              No templates found. Run the letters seed script on the backend.
+            </p>
+          )}
         </div>
       </div>
 
@@ -96,15 +104,21 @@ export const LetterLibraryModule = () => {
       <div className="flex-1 flex flex-col">
         <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-white flex-wrap gap-3">
           <div>
-            <h3 className="font-bold text-gray-900">{selectedTemplate.title}</h3>
+            <h3 className="font-bold text-gray-900">{selectedTemplate?.title ?? 'Templates'}</h3>
             <p className="text-xs text-gray-500">
-              {isDirty ? 'Unsaved changes' : 'Edit the template body below'}
+              {loading
+                ? 'Loading...'
+                : selectedTemplate
+                  ? isDirty
+                    ? 'Unsaved changes'
+                    : 'Edit the template body below'
+                  : 'Select a template'}
             </p>
           </div>
           <button
             type="button"
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || !selectedTemplate || !isDirty}
             className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 flex items-center gap-2 transition-colors"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -112,13 +126,20 @@ export const LetterLibraryModule = () => {
           </button>
         </div>
         <div className="flex-1 p-6 bg-gray-50">
-          <textarea
-            value={selectedTemplate.content}
-            onChange={handleContentChange}
-            aria-label={`Template content for ${selectedTemplate.bureau}`}
-            className="w-full h-full p-6 border border-gray-300 rounded-lg shadow-inner focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm leading-relaxed resize-none bg-white"
-            placeholder="Write your letter template here..."
-          />
+          {loading ? (
+            <div className="h-full flex items-center justify-center">
+              <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+            </div>
+          ) : (
+            <textarea
+              value={selectedTemplate?.content ?? ''}
+              onChange={handleContentChange}
+              disabled={!selectedTemplate}
+              aria-label={`Template content for ${selectedTemplate?.bureau ?? 'selected template'}`}
+              className="w-full h-full p-6 border border-gray-300 rounded-lg shadow-inner focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm leading-relaxed resize-none bg-white disabled:bg-gray-100"
+              placeholder="Write your letter template here..."
+            />
+          )}
         </div>
       </div>
     </div>
