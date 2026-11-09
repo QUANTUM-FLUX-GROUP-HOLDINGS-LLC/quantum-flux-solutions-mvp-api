@@ -103,5 +103,27 @@ export class MailService {
         <p>If you did not request this, you can safely ignore this email — your password will not change.</p>
       `,
     );
+
+  // Non-critical: best-effort notice to the admin when a staff account
+  // attempts self-service recovery. Never throws: the forgot-password
+  // response must stay identical for every user (anti-enumeration).
+  async sendStaffRecoveryRequestNotice(adminEmail: string, staffEmail: string, staffRole: string) {
+    try {
+      await this.send(
+        adminEmail,
+        'Staff password recovery requested',
+        `
+          <h2>Manual Recovery Required</h2>
+          <p>A staff account requested a password reset on the portal.</p>
+          <p><strong>Email:</strong> ${staffEmail}</p>
+          <p><strong>Role:</strong> ${staffRole}</p>
+          <p>Self-service is blocked for staff by policy. Follow the runbook
+          (<em>docs/runbooks/staff-password-recovery.md</em>) to issue a
+          temporary password after verifying the requester's identity.</p>
+        `,
+      );
+    } catch {
+      /* already logged in send(); forgot-password outcome stands */
+    }
   }
 }

@@ -109,6 +109,15 @@ export class AuthService {
       this.logger.warn(
         `Blocked self-service reset for staff account ${masked} (${user.role}); manual recovery required.`,
       );
+
+      // Escalate to the administrator so a temporary password can be issued
+      // manually (Security roadmap item 1). The notice method never throws.
+      const notifyEmail = process.env.ADMIN_NOTIFY_EMAIL;
+      if (notifyEmail) {
+        await this.mail.sendStaffRecoveryRequestNotice(notifyEmail, user.email, user.role);
+      } else {
+        this.logger.warn('ADMIN_NOTIFY_EMAIL is not set; staff recovery attempt was not escalated.');
+      }
     } else if (user) {
       const token = this.jwt.sign(
         { sub: user.id, purpose: 'password-reset' },

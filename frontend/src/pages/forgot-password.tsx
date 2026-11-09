@@ -51,6 +51,19 @@ export default function ForgotPasswordPage() {
               If an account exists for <strong>{email}</strong>, we&apos;ve sent a password
               reset link. Please check your inbox and spam folder.
             </p>
+            <div className="mt-6 pt-6 border-t border-gray-100 text-left">
+              <p className="text-xs text-gray-400">
+                Team member? For security, staff password recovery is handled by the
+                administrator. Contact{' '}
+                <a
+                  href="mailto:support@quantumfluxsolutions.com"
+                  className="text-[#0f4c81] underline"
+                >
+                  support@quantumfluxsolutions.com
+                </a>{' '}
+                to start the manual recovery process.
+              </p>
+            </div>
           </div>
         ) : (
           <>
