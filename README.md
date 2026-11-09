@@ -83,3 +83,20 @@ DO NOT exist in production - the production database is kept clean
   (best-effort), restricted to the owner or an ADMIN.
 - `backend/audit-uploads.mjs` is a read-only audit: rows missing their
   file, and disk files without a row. It never deletes data.
+
+## Security roadmap
+
+Agreed order of implementation (decided 2026-11-09):
+
+1. **Temporary staff passwords.** Admin generates a one-time 16-char
+   temporary password; the account must rotate it on next login
+   (`mustChangePassword` flag + change endpoint). Replaces the manual
+   terminal reset runbook. Prerequisite for 2FA rollout.
+2. **2FA (TOTP) for staff.** `otplib` + `qrcode`, secrets stored per
+   account (`totpSecret`, nullable), 8 hashed recovery codes generated at
+   activation, challenge step before the JWT is issued on login.
+   Phase 1 scope: staff accounts only; CLIENT accounts excluded.
+3. **Known debt to pair with 2FA:** the SSE inbox stream currently
+   authenticates via `?token=` query param (EventSource cannot set
+   headers). Upgrade candidate: single-use stream tickets exchanged for
+   the JWT, to keep tokens out of access logs.
