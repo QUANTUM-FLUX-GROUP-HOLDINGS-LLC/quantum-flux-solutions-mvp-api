@@ -4,7 +4,7 @@
 - Chat: Spanish. Repo (code, comments, commits): English only.
 
 ## Workflow
-- Files created/updated via heredocs (`cat > file << 'EOF'`) or python3 anchor patches.
+- Files created/updated via heredocs (cat with quoted delimiter) or python3 anchor patches.
 - Verify with `npx tsc --noEmit` (both backend and frontend) before any commit.
 - New handoffs are born in `docs/handoffs/` (single canonical directory).
 
