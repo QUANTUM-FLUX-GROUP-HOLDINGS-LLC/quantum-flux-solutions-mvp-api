@@ -1,9 +1,14 @@
 import { Injectable, NotFoundException,
-  ConflictException,
+  ConflictException, BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../core/database/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
+
+// Canonical dispute lifecycle: PENDING -> SENT -> RESOLVED.
+// Any other stored value is legacy garbage (e.g. APPROVED) and must be
+// treated as invalid going forward.
+const DISPUTE_STATUSES = ['PENDING', 'SENT', 'RESOLVED'] as const;
 
 @Injectable()
 export class CreditService {
@@ -33,12 +38,29 @@ export class CreditService {
   }
 
   async updateDisputeStatus(id: string, status: string) {
+    if (!DISPUTE_STATUSES.includes(status as any)) {
+      throw new BadRequestException(
+        `Invalid dispute status "${status}". Allowed: ${DISPUTE_STATUSES.join(', ')}.`,
+      );
+    }
+    // Transitions: PENDING -> SENT -> RESOLVED. Never back to PENDING.
+    const FORWARD: Record<string, string[]> = {
+      PENDING: ['SENT', 'RESOLVED'],
+      SENT: ['RESOLVED'],
+      RESOLVED: [],
+    };
     const dispute = await this.prisma.dispute.findUnique({ 
       where: { id },
       include: { customer: true }
     });
     if (!dispute) throw new NotFoundException('Dispute not found');
-    
+
+    if (!FORWARD[dispute.status]?.includes(status)) {
+      throw new ConflictException(
+        `Cannot move dispute from ${dispute.status} to ${status}.`,
+      );
+    }
+
     const updated = await this.prisma.dispute.update({ where: { id }, data: { status } });
     
     // Enviar correo al cliente si cambia el estado

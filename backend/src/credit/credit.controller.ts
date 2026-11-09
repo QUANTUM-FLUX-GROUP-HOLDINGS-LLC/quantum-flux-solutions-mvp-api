@@ -10,7 +10,7 @@ import { Response } from 'express';
 export class CreditController {
   constructor(private readonly credit: CreditService) {}
 
-  // --- RUTAS PARA EL ADMIN / AGENTE DE CRÉDITO ---
+  // --- Admin / credit agent routes ---
 
   @Get('disputes')
   @Roles('ADMIN', 'CREDIT_REPAIR')
@@ -36,7 +36,7 @@ export class CreditController {
     return this.credit.updateDisputeStatus(id, status);
   }
 
-  // --- RUTA PARA EL CLIENTE (Descargar PDF) ---
+  // --- Client routes (view disputes, download PDF) ---
 
   @Get('my-disputes')
   @Roles('CLIENT')

@@ -65,7 +65,11 @@ export class MailService {
   // Non-critical: dispute status already persisted; notify best-effort.
   async sendDisputeStatusUpdate(to: string, name: string, accountName: string, status: string) {
     const statusText =
-      status === 'SENT' ? 'has been sent to the bureau' : 'has been successfully deleted';
+      status === 'SENT'
+        ? 'has been sent to the credit bureau'
+        : status === 'RESOLVED'
+          ? 'has been resolved'
+          : 'was updated';
     try {
       await this.send(
         to,
