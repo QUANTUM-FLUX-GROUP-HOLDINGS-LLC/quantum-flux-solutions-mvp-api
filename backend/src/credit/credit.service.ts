@@ -63,7 +63,7 @@ export class CreditService {
 
     const updated = await this.prisma.dispute.update({ where: { id }, data: { status } });
     
-    // Enviar correo al cliente si cambia el estado
+    // Notify the client whenever the dispute status changes.
     if (dispute.customer?.email) {
       await this.mail.sendDisputeStatusUpdate(
         dispute.customer.email, 
