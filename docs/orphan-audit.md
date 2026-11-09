@@ -26,3 +26,15 @@ Rule applied: no deploys in 30+ days AND no live domain referencing it
 ## Decisions log
 
 - 2026-11-09: audit opened; mvp-api orphan host confirmed from cycle 012 notes.
+
+## Dispute status sanity check (item 8 verification)
+
+- `updateDisputeStatus` already rejects unknown/legacy statuses with an
+  explicit `BadRequestException` (400) and forbidden transitions with a
+  descriptive `ConflictException` (409). Item 8 was satisfied during cycle
+  012's Mark-as-Sent work; no further change required.
+- Decision: no redundant DTO validation at controller level (service-level
+  validation is explicit and message-rich; duplication adds maintenance
+  cost without security benefit).
+- `backend/check-dispute-statuses.mjs` added as a permanent read-only
+  diagnostic (groups dispute rows by status). Run result 2026-11-09: [].
