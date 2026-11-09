@@ -3,26 +3,34 @@ import { apiFetch } from '../../shared/api';
 import toast from 'react-hot-toast';
 import { X } from 'lucide-react';
 
-interface NewClientModalProps {
+interface ClientFormModalProps {
   isOpen: boolean;
+  mode: 'create' | 'edit';
+  /** Present in edit mode; omitted in create mode. */
+  initial?: { id: string; name: string; email: string };
   onClose: () => void;
   onRefresh: () => void;
 }
 
-export const NewClientModal = ({ isOpen, onClose, onRefresh }: NewClientModalProps) => {
+export const ClientFormModal = ({
+  isOpen, mode, initial, onClose, onRefresh,
+}: ClientFormModalProps) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Close on Escape.
+  // Hydrate form values every time the modal opens.
   useEffect(() => {
     if (!isOpen) return;
+    setName(initial?.name ?? '');
+    setEmail(initial?.email ?? '');
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
+  }, [isOpen, initial, onClose]);
 
   if (!isOpen) return null;
 
@@ -30,17 +38,23 @@ export const NewClientModal = ({ isOpen, onClose, onRefresh }: NewClientModalPro
     e.preventDefault();
     setLoading(true);
     try {
-      await apiFetch('/admin/clients', {
-        method: 'POST',
-        body: JSON.stringify({ name, email }),
-      });
-      toast.success('Client created successfully.');
+      if (mode === 'edit' && initial) {
+        await apiFetch(`/admin/clients/${initial.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ name, email }),
+        });
+        toast.success('Client updated successfully.');
+      } else {
+        await apiFetch('/admin/clients', {
+          method: 'POST',
+          body: JSON.stringify({ name, email }),
+        });
+        toast.success('Client created successfully. They can set a password via "Forgot password".');
+      }
       onRefresh();
       onClose();
-      setName('');
-      setEmail('');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not create client.');
+      toast.error(err instanceof Error ? err.message : 'Could not save client.');
     } finally {
       setLoading(false);
     }
@@ -52,14 +66,16 @@ export const NewClientModal = ({ isOpen, onClose, onRefresh }: NewClientModalPro
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="Add new client"
+      aria-label={mode === 'edit' ? 'Edit client' : 'Add new client'}
     >
       <div
         className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-start mb-4">
-          <h2 className="text-xl font-bold text-gray-900">Add New Client</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            {mode === 'edit' ? 'Edit Client' : 'Add New Client'}
+          </h2>
           <button
             type="button"
             onClick={onClose}
@@ -72,9 +88,9 @@ export const NewClientModal = ({ isOpen, onClose, onRefresh }: NewClientModalPro
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="new-client-name" className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+            <label htmlFor="client-name" className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
             <input
-              id="new-client-name"
+              id="client-name"
               required
               type="text"
               value={name}
@@ -84,9 +100,9 @@ export const NewClientModal = ({ isOpen, onClose, onRefresh }: NewClientModalPro
             />
           </div>
           <div>
-            <label htmlFor="new-client-email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+            <label htmlFor="client-email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
             <input
-              id="new-client-email"
+              id="client-email"
               required
               type="email"
               value={email}
@@ -108,7 +124,7 @@ export const NewClientModal = ({ isOpen, onClose, onRefresh }: NewClientModalPro
               disabled={loading}
               className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
-              {loading ? 'Saving…' : 'Save Client'}
+              {loading ? 'Saving…' : mode === 'edit' ? 'Save Changes' : 'Save Client'}
             </button>
           </div>
         </form>

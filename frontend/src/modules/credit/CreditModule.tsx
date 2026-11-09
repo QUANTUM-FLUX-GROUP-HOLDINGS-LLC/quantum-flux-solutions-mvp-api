@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CreditMetrics } from './components/CreditMetrics';
 import { ClientDirectory } from './components/ClientDirectory';
-import { NewClientModal } from './components/NewClientModal';
+import { ClientFormModal } from './components/ClientFormModal';
 import { apiFetch } from '../shared/api';
 import toast from 'react-hot-toast';
 
@@ -17,6 +17,17 @@ export const CreditModule = () => {
   const [clients, setClients] = useState<AdminClient[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<AdminClient | null>(null);
+
+  const handleDeleteClient = async (client: AdminClient) => {
+    try {
+      await apiFetch(`/admin/clients/${client.id}`, { method: 'DELETE' });
+      toast.success('Client deleted.');
+      fetchClients();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not delete client.');
+    }
+  };
 
   const fetchClients = useCallback(async () => {
     setLoading(true);
@@ -52,9 +63,23 @@ export const CreditModule = () => {
       </div>
 
       <CreditMetrics clients={clients} />
-      <ClientDirectory clients={clients} loading={loading} />
+      <ClientDirectory
+        clients={clients}
+        loading={loading}
+        onEdit={(client) => setEditingClient(client)}
+        onDelete={handleDeleteClient}
+      />
 
-      <NewClientModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onRefresh={fetchClients} />
+      <ClientFormModal
+        isOpen={isModalOpen || editingClient !== null}
+        mode={editingClient ? 'edit' : 'create'}
+        initial={editingClient ?? undefined}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingClient(null);
+        }}
+        onRefresh={fetchClients}
+      />
     </div>
   );
 };
