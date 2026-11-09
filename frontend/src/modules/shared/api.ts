@@ -5,6 +5,9 @@ export const API_URL =
 
 const token = () => (typeof window === 'undefined' ? null : localStorage.getItem(getStoragePrefix() + 'token'));
 
+/** Raw session token for transports that cannot set headers (SSE). */
+export const getAuthToken = () => token();
+
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   const t = token();

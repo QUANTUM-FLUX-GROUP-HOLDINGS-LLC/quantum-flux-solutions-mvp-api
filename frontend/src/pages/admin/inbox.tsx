@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AdminLayout } from '../../modules/shared/AdminLayout';
-import { apiFetch } from '../../modules/shared/api';
+import { apiFetch, API_URL, getAuthToken } from '../../modules/shared/api';
 import toast from 'react-hot-toast';
 import { Search, Loader2, Send, AlertCircle } from 'lucide-react';
 
@@ -66,10 +66,37 @@ export default function AdminInbox() {
     setMessages([]);
     setPollError(false);
 
-    // TODO: replace polling with a WebSocket connection for true real-time updates.
+    // Live updates via SSE; polling is kept as an automatic fallback if
+    // the stream keeps failing (e.g. connection recycling on Render).
     void loadMessages();
-    const interval = setInterval(() => void loadMessages(), POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
+    const t = encodeURIComponent(getAuthToken() || '');
+    const es = new EventSource(`${API_URL}/messages/stream?token=${t}`);
+    let failures = 0;
+    let poll: ReturnType<typeof setInterval> | null = null;
+    const startFallbackPoll = () => {
+      if (poll) return;
+      poll = setInterval(() => void loadMessages(), POLL_INTERVAL_MS);
+    };
+
+    es.onmessage = (e) => {
+      // Ignore the server keep-alive pings.
+      try {
+        if ((JSON.parse(e.data) as { type?: string }).type === 'ping') return;
+      } catch { /* non-JSON frames are treated as new messages */ }
+      failures = 0;
+      if (poll) { clearInterval(poll); poll = null; }
+      setPollError(false);
+      void loadMessages();
+    };
+    es.onopen = () => { failures = 0; setPollError(false); };
+    es.onerror = () => {
+      failures += 1;
+      if (failures >= 3) startFallbackPoll();
+    };
+    return () => {
+      es.close();
+      if (poll) clearInterval(poll);
+    };
   }, [selectedClient, loadMessages]);
 
   // Auto-scroll to the latest message.
