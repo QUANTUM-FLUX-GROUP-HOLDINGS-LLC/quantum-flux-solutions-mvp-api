@@ -63,3 +63,23 @@ DO NOT exist in production - the production database is kept clean
 5.  **Environment variables:** never commit `.env` files; keep `.example` files
     up to date.
 6.  **Language:** repository code, comments and docs are English-only.
+
+## Uploads lifecycle
+
+- Documents upload through `POST /documents` (10MB max, PDF/PNG/JPEG only).
+  A `Document` row is created and the bytes go to `SupabaseService` — a
+  dual-mode service: real Supabase Storage when `SUPABASE_URL` /
+  `SUPABASE_SERVICE_ROLE_KEY` are set, local `uploads/` disk otherwise
+  (mock mode). Despite the name, it is the storage abstraction, not a
+  Supabase-only client.
+- In mock mode the DB `storagePath` keeps the logical
+  `customerId/timestamp-rand.ext` form, while on disk slashes are
+  flattened to underscores. Delete and audit paths replicate this.
+- Files on the local disk are EPHEMERAL on Render: every deploy or restart
+  wipes `uploads/`, leaving rows whose file no longer exists. Production
+  should configure real Supabase Storage so documents survive deploys
+  (tracked as roadmap).
+- `DELETE /documents/:id` deletes the row first, then the file
+  (best-effort), restricted to the owner or an ADMIN.
+- `backend/audit-uploads.mjs` is a read-only audit: rows missing their
+  file, and disk files without a row. It never deletes data.

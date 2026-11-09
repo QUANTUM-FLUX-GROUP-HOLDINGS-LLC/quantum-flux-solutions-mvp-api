@@ -55,4 +55,21 @@ export class DocumentsService {
     const url = await this.supabase.getSignedUrl('documents', doc.storagePath);
     return { url };
   }
+
+  async remove(documentId: string, selfId: string, role: string) {
+    const doc = role === 'ADMIN'
+      ? await this.prisma.document.findUnique({ where: { id: documentId } })
+      : await this.prisma.document.findFirst({ where: { id: documentId, customerId: selfId } });
+    if (!doc) throw new NotFoundException('Document not found');
+
+    // Row first, file second: a failed unlink leaves at most a stray file,
+    // never a row pointing at nothing.
+    await this.prisma.document.delete({ where: { id: doc.id } });
+    try {
+      await this.supabase.deleteFile('documents', doc.storagePath);
+    } catch {
+      // Best-effort: file may already be gone (ephemeral disk on Render).
+    }
+  }
 }
+

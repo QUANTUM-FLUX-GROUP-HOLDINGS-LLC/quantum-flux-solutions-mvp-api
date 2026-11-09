@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Get, Param, Post, Req, Query, UploadedFile,
+  Body, Controller, Delete, Get, Param, Post, Req, Query, UploadedFile,
   UseGuards, UseInterceptors, BadRequestException
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -44,5 +44,12 @@ export class DocumentsController {
   download(@Req() req: any, @Param('id') id: string) {
     const customerId = req.user.id || req.user.sub || req.user.userId;
     return this.documents.createSignedUrl(customerId, id);
+  }
+
+  @Delete(':id')
+  async remove(@Req() req: any, @Param('id') id: string) {
+    const selfId = req.user.id || req.user.sub || req.user.userId;
+    await this.documents.remove(id, selfId, req.user.role);
+    return { deleted: true };
   }
 }

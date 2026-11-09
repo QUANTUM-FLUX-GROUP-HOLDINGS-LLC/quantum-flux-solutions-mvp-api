@@ -54,4 +54,16 @@ export class SupabaseService {
     if (error) throw new Error(error.message);
     return data.signedUrl;
   }
+
+  async deleteFile(bucket: string, filePath: string) {
+    if (this.isMock) {
+      // Mock mode flattens the path onto the local uploads/ directory.
+      const safeName = filePath.replace(/\//g, '_');
+      const p = path.join(process.cwd(), 'uploads', safeName);
+      if (fs.existsSync(p)) fs.unlinkSync(p);
+      return;
+    }
+    const { error } = await this.supabase.storage.from(bucket).remove([filePath]);
+    if (error) throw new Error(error.message);
+  }
 }
