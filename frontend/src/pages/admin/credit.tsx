@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
+import { useTabParam } from '../../hooks/use-tab-param';
 import { AdminLayout } from '../../modules/shared/AdminLayout';
 import { apiFetch } from '../../modules/shared/api';
 import { ClientDocuments } from '../../modules/admin/components/ClientDocuments';
@@ -20,17 +21,12 @@ type Dispute = {
   customer: { id: string; name: string; email: string };
 };
 
-export default function AdminCreditPage() {
-  const [activeTab, setActiveTab] = useState<'disputes' | 'letters' | 'clients'>('disputes');
-  const router = useRouter();
+type CreditTab = 'disputes' | 'letters' | 'clients';
+const CREDIT_TABS: readonly CreditTab[] = ['disputes', 'letters', 'clients'];
 
-  // Deep-link support: the module sidebar links carry ?tab= (router.isReady
-  // guards the async query resolution of the Pages Router).
-  useEffect(() => {
-    if (!router.isReady) return;
-    const t = router.query.tab;
-    if (t === 'disputes' || t === 'letters' || t === 'clients') setActiveTab(t);
-  }, [router.isReady, router.query.tab]);
+export default function AdminCreditPage() {
+  const [activeTab, changeTab] = useTabParam<CreditTab>('disputes', CREDIT_TABS);
+
   
   const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [clients, setClients] = useState<any[]>([]);
@@ -146,7 +142,7 @@ export default function AdminCreditPage() {
       <div className="mb-6 border-b border-gray-200">
         <div className="flex gap-6">
           <button
-            onClick={() => setActiveTab('disputes')}
+            onClick={() => changeTab('disputes')}
             className={`pb-3 text-sm font-medium flex items-center gap-2 transition-colors border-b-2 ${
               activeTab === 'disputes' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
@@ -154,7 +150,7 @@ export default function AdminCreditPage() {
             <Scale className="w-4 h-4" /> Disputes
           </button>
           <button
-            onClick={() => setActiveTab('letters')}
+            onClick={() => changeTab('letters')}
             className={`pb-3 text-sm font-medium flex items-center gap-2 transition-colors border-b-2 ${
               activeTab === 'letters' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
@@ -162,7 +158,7 @@ export default function AdminCreditPage() {
             <FileText className="w-4 h-4" /> Letter Library
           </button>
           <button
-            onClick={() => setActiveTab('clients')}
+            onClick={() => changeTab('clients')}
             className={`pb-3 text-sm font-medium flex items-center gap-2 transition-colors border-b-2 ${
               activeTab === 'clients' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
