@@ -76,6 +76,7 @@ Sequence of findings during verification:
 
 ## Test data in production
 
-- Client `test-e2e@quantumfluxsolutions.com` + one dispute exist from the E2E
-  run (currently RESOLVED). Decide: keep as seed data or purge via transaction
-  (pattern used in cycle 011).
+- The E2E test data (client `test-e2e@quantumfluxsolutions.com`, its dispute and
+  related records) was purged in a single transaction after verification,
+  consistent with the cycle 011 decision: production starts clean with only the
+  `support@` ADMIN account.
