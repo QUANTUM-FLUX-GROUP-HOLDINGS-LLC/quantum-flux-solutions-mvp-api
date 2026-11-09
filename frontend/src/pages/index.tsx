@@ -70,7 +70,7 @@ export default function Home() {
         <p>© {new Date().getFullYear()} Quantum Flux Solutions. All rights reserved.</p>
         <div className="mt-4 flex justify-center gap-6">
           <Link href="/login" className="hover:text-gray-900">Client Portal</Link>
-          <Link href="/staff-login" className="hover:text-gray-900">Staff Portal</Link>
+          <Link href="/login" className="hover:text-gray-900">Staff Portal</Link>
         </div>
       </footer>
     </div>

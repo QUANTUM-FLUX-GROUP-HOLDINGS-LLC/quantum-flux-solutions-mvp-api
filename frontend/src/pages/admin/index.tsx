@@ -9,7 +9,7 @@ export default function AdminIndex() {
   useEffect(() => {
     if (loading) return;
     if (!user || user.role === 'CLIENT') {
-      router.replace('/staff-login');
+      router.replace('/login');
       return;
     }
     router.replace('/admin/dashboard');

@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { apiFetch } from './api';
-import { getStoragePrefix } from './storage'; // <-- IMPORTACIÓN LIMPIA
+import { clearSession, getStoragePrefix } from './storage';
 
 export type AuthUser = {
   id: string;
@@ -68,15 +68,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signOut = useCallback(() => {
-    localStorage.removeItem(getStoragePrefix() + 'token');
-    localStorage.removeItem(getStoragePrefix() + 'user');
+    clearSession();
     setUser(null);
-    
-    if (typeof window !== 'undefined' && window.location.hostname.startsWith('staff')) {
-      router.push('/staff-login');
-    } else {
-      router.push('/login');
-    }
+    router.push('/login');
   }, [router]);
 
   useEffect(() => {

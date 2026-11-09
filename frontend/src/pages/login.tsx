@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../modules/shared/auth-context';
-import { getStoragePrefix } from '../modules/shared/storage';
+import { writeSession } from '../modules/shared/storage';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -29,15 +29,12 @@ export default function LoginPage() {
       if (!res.ok) throw new Error('Invalid email or password');
       const data = await res.json();
 
-      if (data.user.role !== 'CLIENT') {
-        throw new Error('Invalid email or password');
-      }
 
-      localStorage.setItem(getStoragePrefix() + 'token', data.token);
-      localStorage.setItem(getStoragePrefix() + 'user', JSON.stringify(data.user));
+      writeSession(data.token, data.user);
       
       await refreshEntitlements();
-      router.push('/dashboard');
+      // Unified login: redirect based on the authenticated role.
+      router.push(data.user.role === 'CLIENT' ? '/dashboard' : '/admin/dashboard');
 
     } catch (err: any) {
       setError(err.message);
@@ -50,7 +47,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md border border-gray-100">
         <h2 className="text-2xl font-bold text-center text-[#1a1f36] mb-2">Quantum Flux Solutions</h2>
-        <p className="text-center text-gray-500 mb-6">Client Portal</p>
+        <p className="text-center text-gray-500 mb-6">Sign in to your account</p>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
