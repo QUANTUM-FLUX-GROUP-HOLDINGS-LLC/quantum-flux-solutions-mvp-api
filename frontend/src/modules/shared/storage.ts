@@ -1,30 +1,66 @@
-// Storage scopes: the client portal and the admin area resolve different
-// key prefixes based on the current hostname/path. Sessions are persisted
-// under every scope at login so a unified login works from any page.
-export const STORAGE_PREFIXES = ['client_', 'staff_'] as const;
+// Session storage: single shared prefix since cycle 013.
+// Previously sessions were mirrored under client_/staff_ prefixes so the
+// client portal and the admin area could read them independently. The
+// unified login (012) made the mirrors identical, so they only duplicated
+// data. Route protection is role-based (RouteGuard), never prefix-based.
+export const SESSION_PREFIX = 'qfs_';
 
-export const getStoragePrefix = () => {
-  if (typeof window === 'undefined') return 'client_';
-  const isStaff =
-    window.location.hostname.startsWith('staff') ||
-    window.location.pathname.startsWith('/admin');
-  return isStaff ? 'staff_' : 'client_';
+// Legacy keys kept only so existing browsers migrate transparently.
+const LEGACY_PREFIXES = ['client_', 'staff_'];
+
+export interface SessionData {
+  token: string;
+  user: unknown;
+}
+
+// One-time in-flight migration: if a legacy session exists and the new one
+// does not, copy it forward, then remove the legacy keys. Safe to call on
+// every boot; it is a no-op once migrated or when nothing is stored.
+export const migrateLegacySession = (): void => {
+  if (typeof window === 'undefined') return;
+
+  const hasNew = !!localStorage.getItem(SESSION_PREFIX + 'token');
+  if (hasNew) {
+    for (const p of LEGACY_PREFIXES) {
+      localStorage.removeItem(p + 'token');
+      localStorage.removeItem(p + 'user');
+    }
+    return;
+  }
+
+  for (const p of LEGACY_PREFIXES) {
+    const token = localStorage.getItem(p + 'token');
+    const user = localStorage.getItem(p + 'user');
+    if (token) {
+      localStorage.setItem(SESSION_PREFIX + 'token', token);
+      if (user) localStorage.setItem(SESSION_PREFIX + 'user', user);
+    }
+  }
+
+  for (const p of LEGACY_PREFIXES) {
+    localStorage.removeItem(p + 'token');
+    localStorage.removeItem(p + 'user');
+  }
 };
 
-// Persist the session under every known prefix so both the client portal
-// and the admin area can read it after a role-based redirect.
 export const writeSession = (token: string, user: unknown) => {
   if (typeof window === 'undefined') return;
-  for (const prefix of STORAGE_PREFIXES) {
-    localStorage.setItem(prefix + 'token', token);
-    localStorage.setItem(prefix + 'user', JSON.stringify(user));
-  }
+  localStorage.setItem(SESSION_PREFIX + 'token', token);
+  localStorage.setItem(SESSION_PREFIX + 'user', JSON.stringify(user));
 };
 
 export const clearSession = () => {
   if (typeof window === 'undefined') return;
-  for (const prefix of STORAGE_PREFIXES) {
-    localStorage.removeItem(prefix + 'token');
-    localStorage.removeItem(prefix + 'user');
+  localStorage.removeItem(SESSION_PREFIX + 'token');
+  localStorage.removeItem(SESSION_PREFIX + 'user');
+  for (const p of LEGACY_PREFIXES) {
+    localStorage.removeItem(p + 'token');
+    localStorage.removeItem(p + 'user');
   }
 };
+
+export const getSessionToken = (): string | null =>
+  typeof window === 'undefined' ? null : localStorage.getItem(SESSION_PREFIX + 'token');
+
+export const getSessionUserRaw = (): string | null =>
+  typeof window === 'undefined' ? null : localStorage.getItem(SESSION_PREFIX + 'user');

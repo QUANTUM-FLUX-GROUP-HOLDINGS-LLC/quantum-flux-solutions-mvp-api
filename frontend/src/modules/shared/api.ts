@@ -1,9 +1,9 @@
-import { getStoragePrefix } from './storage';
+import { getSessionToken } from './storage';
 
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
-const token = () => (typeof window === 'undefined' ? null : localStorage.getItem(getStoragePrefix() + 'token'));
+const token = () => getSessionToken();
 
 /** Raw session token for transports that cannot set headers (SSE). */
 export const getAuthToken = () => token();

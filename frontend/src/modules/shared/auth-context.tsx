@@ -1,7 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { apiFetch } from './api';
-import { clearSession, getStoragePrefix } from './storage';
+import {
+  clearSession, getSessionToken, getSessionUserRaw,
+  migrateLegacySession, SESSION_PREFIX,
+} from './storage';
 
 export type AuthUser = {
   id: string;
@@ -25,7 +28,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const readStoredUser = (): AuthUser | null => {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = localStorage.getItem(getStoragePrefix() + 'user');
+    const raw = getSessionUserRaw();
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return { ...parsed, services: Array.isArray(parsed.services) ? parsed.services : [] };
@@ -34,8 +37,7 @@ const readStoredUser = (): AuthUser | null => {
   }
 };
 
-const hasToken = () =>
-  typeof window !== 'undefined' && !!localStorage.getItem(getStoragePrefix() + 'token');
+const hasToken = () => typeof window !== 'undefined' && !!getSessionToken();
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -48,7 +50,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
       return;
     }
-    
+
     setLoading(true);
     try {
       const fresh = await apiFetch<AuthUser>('/auth/me');
@@ -57,10 +59,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         services: Array.isArray(fresh.services) ? fresh.services : [],
       };
       setUser(normalized);
-      localStorage.setItem(getStoragePrefix() + 'user', JSON.stringify(normalized));
+      localStorage.setItem(SESSION_PREFIX + 'user', JSON.stringify(normalized));
     } catch {
-      localStorage.removeItem(getStoragePrefix() + 'token');
-      localStorage.removeItem(getStoragePrefix() + 'user');
+      localStorage.removeItem(SESSION_PREFIX + 'token');
+      localStorage.removeItem(SESSION_PREFIX + 'user');
       setUser(null);
     } finally {
       setLoading(false);
@@ -74,6 +76,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [router]);
 
   useEffect(() => {
+    // Migrate any legacy client_/staff_ session forward before the first
+    // read so no logged-in browser is silently logged out by item 9.
+    migrateLegacySession();
     const stored = readStoredUser();
     if (stored) setUser(stored);
     void refreshEntitlements();
