@@ -3,6 +3,10 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../core/database/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { MailService } from '../mail/mail.service';
+import { authenticator } from 'otplib';
+
+// Tolerate ±1 step (30s) of clock drift between server and authenticator.
+authenticator.options = { window: 1 };
 
 @Injectable()
 export class AuthService {
@@ -35,6 +39,17 @@ export class AuthService {
 
     const valid = await bcrypt.compare(pass, user.password);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
+
+    // 2FA (staff): once TOTP is confirmed, the password alone is not enough.
+    // Instead of a session token, issue a short-lived challenge the user
+    // must redeem with a TOTP code at POST /auth/2fa/login.
+    if (user.role !== 'CLIENT' && user.totpConfirmed && user.totpSecret) {
+      const challenge = this.jwt.sign(
+        { sub: user.id, purpose: '2fa-challenge' },
+        { expiresIn: '5m' },
+      );
+      return { twoFactorRequired: true, challenge };
+    }
 
     const payload = { sub: user.id, email: user.email, role: user.role };
     const token = this.jwt.sign(payload);
@@ -167,4 +182,87 @@ export class AuthService {
     return { message: 'Password updated. You can now log in.' };
   }
 
+  // ------------------------------------------------------------------
+  // TOTP 2FA for staff (phase 1). CLIENT accounts are unaffected.
+  // Enrollment: setupTotp stores a pending secret; activateTotp confirms
+  // it with a first valid code. Login then requires the second factor.
+  // Recovery: manual Super Admin runbook clears the TOTP columns.
+  // ------------------------------------------------------------------
+
+  private assertStaff(user: { role: string }) {
+    if (user.role === 'CLIENT') {
+      throw new UnauthorizedException('2FA is available to staff accounts only.');
+    }
+  }
+
+  async setupTotp(userId: string) {
+    const user = await this.prisma.customer.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException();
+
+    this.assertStaff(user);
+
+    const secret = authenticator.generateSecret();
+    await this.prisma.customer.update({
+      where: { id: userId },
+      data: { totpSecret: secret, totpConfirmed: false },
+    });
+
+    // otpauth URL lets any authenticator app enroll by link or manual entry.
+    const appName = process.env.APP_NAME || 'Quantum Flux Portal';
+    const otpauth = authenticator.keyuri(user.email, appName, secret);
+    return { otpauth, secret };
+  }
+
+  async activateTotp(userId: string, code: string) {
+    const user = await this.prisma.customer.findUnique({ where: { id: userId } });
+    if (!user || !user.totpSecret) throw new UnauthorizedException('2FA setup not started.');
+
+    this.assertStaff(user);
+
+    const ok = authenticator.verify({ token: code, secret: user.totpSecret });
+    if (!ok) throw new UnauthorizedException('Invalid verification code.');
+
+    await this.prisma.customer.update({
+      where: { id: userId },
+      data: { totpConfirmed: true },
+    });
+    return { message: '2FA enabled. Future logins will require a code.' };
+  }
+
+  // Second step of login: redeems the short-lived 2fa-challenge token.
+  async loginWithTotp(challenge: string, code: string) {
+    let payload: any;
+    try {
+      payload = this.jwt.verify(challenge);
+    } catch {
+      throw new UnauthorizedException('Invalid or expired challenge.');
+    }
+
+    // Reject session/reset tokens repurposed as 2FA challenges.
+    if (payload.purpose !== '2fa-challenge') {
+      throw new UnauthorizedException('Invalid challenge token.');
+    }
+
+    const user = await this.prisma.customer.findUnique({ where: { id: payload.sub } });
+    if (!user || !user.totpConfirmed || !user.totpSecret) {
+      throw new UnauthorizedException('2FA is not enabled for this account.');
+    }
+
+    const ok = authenticator.verify({ token: code, secret: user.totpSecret });
+    if (!ok) throw new UnauthorizedException('Invalid verification code.');
+
+    // Same session shape as the standard login success path.
+    const token = this.jwt.sign({ sub: user.id, email: user.email, role: user.role });
+    return {
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        status: user.status,
+        services: user.services ?? [],
+      },
+    };
+  }
 }

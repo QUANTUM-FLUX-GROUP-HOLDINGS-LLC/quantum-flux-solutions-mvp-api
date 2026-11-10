@@ -19,6 +19,8 @@ model Customer {
   status     String      @default("PENDING")
   role       String      @default("CLIENT")
   services   String[]    @default([])
+  totpSecret String?
+  totpConfirmed Boolean @default(false)
   createdAt  DateTime    @default(now())
   documents  Document[]
   disputes   Dispute[]

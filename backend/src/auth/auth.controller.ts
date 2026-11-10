@@ -47,4 +47,29 @@ export class AuthController {
     const userId = req.user.id || req.user.sub || req.user.userId;
     return this.authService.changePassword(userId, body.currentPassword, body.newPassword);
   }
+
+  // -------------------------------------------------------------------
+  // TOTP 2FA (staff). Setup/activate require a valid session; the second
+  // login step redeems the challenge issued by POST /auth/login.
+  // -------------------------------------------------------------------
+
+  @Post('2fa/setup')
+  @UseGuards(JwtAuthGuard)
+  setupTotp(@Req() req: any) {
+    const userId = req.user.id || req.user.sub;
+    return this.authService.setupTotp(userId);
+  }
+
+  @Post('2fa/activate')
+  @UseGuards(JwtAuthGuard)
+  activateTotp(@Req() req: any, @Body() body: any) {
+    const userId = req.user.id || req.user.sub;
+    return this.authService.activateTotp(userId, body.code);
+  }
+
+  // Public: challenge comes from login, code from the authenticator app.
+  @Post('2fa/login')
+  loginWithTotp(@Body() body: any) {
+    return this.authService.loginWithTotp(body.challenge, body.code);
+  }
 }
