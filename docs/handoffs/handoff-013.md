@@ -58,7 +58,7 @@ Status: backlog 013 fully serviced. External verifications pending (below).
 
 ## Proposed backlog 014
 
-1. 2FA TOTP for staff, phase 1 (otplib; recovery via existing runbook).
+1. DONE (2026-11-10, commit f7a1306): 2FA TOTP staff phase 1 delivered and E2E verified; phase 2 (QR, recovery codes, UI, rollout) remains.
 2. Close orphan audit once dashboard lists arrive.
 3. Retire SSE ?token= debt (cookie or short-lived handshake channel).
 4. Consider session hardening: short-lived JWT + refresh path.

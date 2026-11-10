@@ -20,7 +20,7 @@ This project follows a **Feature-Driven Architecture**.
 
 ### Step 1: Environment variables
 *   `backend/.env`: real Supabase `DATABASE_URL` (and Stripe keys).
-*   `frontend/.env.local`: locally set `NEXT_PUBLIC_API_URL="http://localhost:3001/api"`.
+*   `frontend/.env.local`: locally set `NEXT_PUBLIC_API_URL="http://localhost:3000/api"`.
 
 ### Step 2: Run manually (two terminals)
 **Terminal 1 (Backend):**
@@ -29,7 +29,7 @@ This project follows a **Feature-Driven Architecture**.
 *   `npx prisma generate`
 *   `npx prisma migrate deploy` (NEVER `db push`, see notes)
 *   `node seed-letters.mjs` (seeds the 3 letter templates)
-*   `npm run start:dev` (http://localhost:3001)
+*   `npm run start:dev` (http://localhost:3000)
 
 **Terminal 2 (Frontend):**
 *   `cd frontend`
@@ -92,10 +92,16 @@ Agreed order of implementation (decided 2026-11-09):
    temporary password; the account must rotate it on next login
    (`mustChangePassword` flag + change endpoint). Replaces the manual
    terminal reset runbook. Prerequisite for 2FA rollout.
-2. **2FA (TOTP) for staff.** `otplib` + `qrcode`, secrets stored per
-   account (`totpSecret`, nullable), 8 hashed recovery codes generated at
-   activation, challenge step before the JWT is issued on login.
-   Phase 1 scope: staff accounts only; CLIENT accounts excluded.
+2. **2FA (TOTP) for staff.** PHASE 1 DELIVERED (commit f7a1306,
+   2026-11-10): `otplib` 12.0.1 (pinned; v13 dropped the `authenticator`
+   export), `totpSecret`/`totpConfirmed` columns on Customer, staff-only
+   enrollment via `POST /auth/2fa/setup` returning an `otpauth://` URI,
+   activation with a first valid code, and a short-lived `2fa-challenge`
+   JWT before the session is issued. Verified E2E locally against the real
+   DB (temp staff account, purged and counted afterwards).
+   NOT yet delivered (phase 2): QR code rendering (URI is copy/manual-entry
+   for now), 8 hashed recovery codes, frontend UI screens, and rollout.
+   Recovery today: manual Super Admin runbook clears the TOTP columns.
 3. **Known debt to pair with 2FA:** the SSE inbox stream currently
    authenticates via `?token=` query param (EventSource cannot set
    headers). Upgrade candidate: single-use stream tickets exchanged for
