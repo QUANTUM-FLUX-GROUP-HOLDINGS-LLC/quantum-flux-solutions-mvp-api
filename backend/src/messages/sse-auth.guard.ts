@@ -1,18 +1,27 @@
-import { ExecutionContext, Injectable } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { SseTicketsService } from './sse-tickets.service';
 
 /**
- * Same validation as JwtAuthGuard, but accepts the session token as a
- * ?token= query parameter for EventSource connections, which cannot
- * set custom Authorization headers.
+ * Authenticates the SSE inbox stream with a single-use ticket issued by
+ * POST /messages/stream-ticket (which itself requires the normal Bearer
+ * JWT). Replaces the former ?token= passthrough, so the long-lived
+ * session JWT never appears in a URL.
  */
 @Injectable()
-export class SseAuthGuard extends JwtAuthGuard {
-  canActivate(context: ExecutionContext) {
+export class SseAuthGuard implements CanActivate {
+  constructor(private readonly tickets: SseTicketsService) {}
+
+  canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest();
-    if (!req.headers?.authorization && req.query?.token) {
-      req.headers.authorization = `Bearer ${req.query.token}`;
+    const ticket = req.query?.ticket;
+    if (!ticket) {
+      throw new UnauthorizedException('Missing stream ticket.');
     }
-    return super.canActivate(context);
+    const claims = this.tickets.consume(String(ticket));
+    if (!claims) {
+      throw new UnauthorizedException('Invalid or expired stream ticket.');
+    }
+    req.user = claims;
+    return true;
   }
 }

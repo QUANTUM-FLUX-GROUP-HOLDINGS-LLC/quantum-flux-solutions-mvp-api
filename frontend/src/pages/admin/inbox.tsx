@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AdminLayout } from '../../modules/shared/AdminLayout';
-import { apiFetch, API_URL, getAuthToken } from '../../modules/shared/api';
+import { API_URL, apiFetch } from '../../modules/shared/api';
 import toast from 'react-hot-toast';
 import { Search, Loader2, Send, AlertCircle } from 'lucide-react';
 
@@ -68,17 +68,21 @@ export default function AdminInbox() {
 
     // Live updates via SSE; polling is kept as an automatic fallback if
     // the stream keeps failing (e.g. connection recycling on Render).
+    // Auth: a single-use ticket is fetched with the normal Bearer header
+    // and redeemed in the stream URL; the session JWT never appears in
+    // a URL (retires the ?token= debt). Each EventSource consumes one
+    // ticket, so every (re)connect must request a fresh one.
     void loadMessages();
-    const t = encodeURIComponent(getAuthToken() || '');
-    const es = new EventSource(`${API_URL}/messages/stream?token=${t}`);
     let failures = 0;
     let poll: ReturnType<typeof setInterval> | null = null;
+    let es: EventSource | null = null;
+    let reconnect: ReturnType<typeof setTimeout> | null = null;
+    let disposed = false;
     const startFallbackPoll = () => {
       if (poll) return;
       poll = setInterval(() => void loadMessages(), POLL_INTERVAL_MS);
     };
-
-    es.onmessage = (e) => {
+    const onFrame = (e: MessageEvent) => {
       // Ignore the server keep-alive pings.
       try {
         if ((JSON.parse(e.data) as { type?: string }).type === 'ping') return;
@@ -88,13 +92,40 @@ export default function AdminInbox() {
       setPollError(false);
       void loadMessages();
     };
-    es.onopen = () => { failures = 0; setPollError(false); };
-    es.onerror = () => {
-      failures += 1;
+    const scheduleReconnect = () => {
+      if (disposed) return;
       if (failures >= 3) startFallbackPoll();
+      reconnect = setTimeout(() => void connect(), Math.min(500 * 2 ** failures, 8000));
     };
+    const connect = async () => {
+      if (disposed) return;
+      try {
+        const { ticket } = await apiFetch<{ ticket: string }>('/messages/stream-ticket', {
+          method: 'POST',
+        });
+        if (disposed) return;
+        es = new EventSource(`${API_URL}/messages/stream?ticket=${encodeURIComponent(ticket)}`);
+        es.onmessage = onFrame;
+        es.onopen = () => { failures = 0; setPollError(false); };
+        es.onerror = () => {
+          // The ticket is single-use: native reconnection with the same
+          // URL cannot succeed, so rebuild with a fresh ticket (backoff;
+          // polling fallback after 3 failures).
+          failures += 1;
+          es?.close();
+          es = null;
+          scheduleReconnect();
+        };
+      } catch {
+        failures += 1;
+        scheduleReconnect();
+      }
+    };
+    void connect();
     return () => {
-      es.close();
+      disposed = true;
+      es?.close();
+      if (reconnect) clearTimeout(reconnect);
       if (poll) clearInterval(poll);
     };
   }, [selectedClient, loadMessages]);
