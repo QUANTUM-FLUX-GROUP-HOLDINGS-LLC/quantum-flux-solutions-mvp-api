@@ -53,6 +53,10 @@ inputs; E2E post-deploy pending (below).
 
 ## E2E post-deploy checklist
 
+- LOCAL SMOKE GREEN (2026-11-11, against prod Supabase via local backend):
+  login issues both tokens; refresh rotates (2xx); reuse of a rotated
+  token 401s; the whole chain is revoked afterwards; logout revokes.
+  Smoke refresh tokens purged after the run.
 - SSE: /messages/stream?ticket=... connects <1s; no session JWT in any
   URL; reconnect fetches a fresh ticket; polling after 3 failures.
 - Refresh: session survives >15m with silent refresh (DevTools Network:
