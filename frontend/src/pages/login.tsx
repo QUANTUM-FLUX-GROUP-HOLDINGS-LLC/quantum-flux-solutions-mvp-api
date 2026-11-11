@@ -30,7 +30,7 @@ export default function LoginPage() {
       const data = await res.json();
 
 
-      writeSession(data.token, data.user);
+      writeSession(data.token, data.user, data.refreshToken);
       
       await refreshEntitlements();
       // Unified login: redirect based on the authenticated role.

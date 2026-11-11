@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { apiFetch } from './api';
+import { API_URL, apiFetch } from './api';
 import {
   clearSession, getSessionToken, getSessionUserRaw,
   migrateLegacySession, SESSION_PREFIX,
@@ -70,6 +70,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signOut = useCallback(() => {
+    // Best-effort revocation of the server-side refresh chain before
+    // local state is cleared (fire-and-forget; logout wins offline too).
+    const t = getSessionToken();
+    if (t) {
+      void fetch(`${API_URL}/auth/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${t}` },
+      }).catch(() => {});
+    }
     clearSession();
     setUser(null);
     router.push('/login');
