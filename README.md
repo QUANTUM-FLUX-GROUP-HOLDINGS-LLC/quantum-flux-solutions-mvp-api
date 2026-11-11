@@ -104,9 +104,16 @@ Agreed order of implementation (decided 2026-11-09):
    activation with a first valid code, and a short-lived `2fa-challenge`
    JWT before the session is issued. Verified E2E locally against the real
    DB (temp staff account, purged and counted afterwards).
-   NOT yet delivered (phase 2): QR code rendering (URI is copy/manual-entry
-   for now), 8 hashed recovery codes, frontend UI screens, and rollout.
-   Recovery today: manual Super Admin runbook clears the TOTP columns.
+   PHASE 2 DELIVERED (2026-11-11, commits 80311db + c711f72 + a91851d):
+   QR rendering in admin settings (qrcode.react), eight single-use
+   recovery codes (bcrypt-hashed, served exactly once at activation,
+   re-activation rotates the batch, atomic consumption), and the frontend
+   UI (verification step on login + setup panel). A patch silently
+   dropped a guard and loginWithTotp briefly accepted any code; the
+   negative smoke case (garbage code -> 401) caught it live and the fix
+   landed before anything shipped. Remaining (owner): staff rollout;
+   the manual Super Admin runbook stays the recovery path of last
+   resort if both the authenticator and all codes are lost.
 3. **SSE stream auth (?token= debt): RETIRED** (2026-11-10, commit
    e422bb3). The inbox stream now exchanges the Bearer JWT for a
    single-use, 30s ticket via POST /messages/stream-ticket
@@ -135,7 +142,7 @@ runbook (`docs/runbooks/staff-password-recovery.md`). Set
 without it the attempt is only logged. The endpoint response stays
 identical for all users (anti-enumeration).
 
-### Patch-script lessons (cycles 013-014 incidents)
+### Patch-script lessons (cycles 013-015 incidents)
 
 - Lesson 11: an anchor must never span more than one functional brace;
   if it includes a brace belonging to prior code, the replacement must
@@ -159,3 +166,21 @@ identical for all users (anti-enumeration).
   (`tsc && git add && git commit`), making a red push physically
   impossible. This cycle breached L14 twice (Block H after a red Block
   F published the incomplete ea8b6b0, fixed forward immediately).
+- Lesson 17: diff old vs new line by line when replacing a block. A
+  silently dropped guard (if-not-ok throw) let loginWithTotp accept ANY
+  code, making 2FA decorative. Auth smokes MUST include negative cases
+  (garbage code -> 401, recovery reuse -> 401) alongside the positives;
+  that is what caught the hole, before anything shipped.
+- Lesson 18: interactive bash history expansion corrupts pasted
+  exclamation marks even inside quoted heredocs ("event not found"),
+  mangling the patch before Python ever sees it. Every block now ships a
+  gate-0 (abort if H is in the shell options) and runs after set +H;
+  when the character is unavoidable in text, generate it via printf or
+  chr(33) instead of pasting it literally.
+- Lesson 19: local-ops hygiene, from a night of EADDRINUSE/P1001:
+  (a) census and kill ALL watchers before booting one (four zombies had
+  piled up, each holding its own connection pool); (b) against the
+  Supabase pooler, Prisma must use session mode (port 5432), never
+  transaction mode (6543); (c) EXIT traps must delete tmp files as well
+  as DB rows (a crashed block left backend/tmp-diag.mjs behind; the
+  exact-tree gate caught it before the commit).
