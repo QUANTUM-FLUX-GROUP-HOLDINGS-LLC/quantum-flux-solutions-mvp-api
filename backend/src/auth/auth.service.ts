@@ -232,7 +232,27 @@ export class AuthService {
       where: { id: userId },
       data: { totpConfirmed: true },
     });
-    return { message: '2FA enabled. Future logins will require a code.' };
+
+    // Issue a fresh batch of one-time recovery codes (phase 2). They are
+    // returned ONCE here and stored only as bcrypt hashes; each code can
+    // redeem exactly one 2FA challenge. Re-activating rotates the batch.
+    const codes: string[] = [];
+    for (let i = 0; i < 8; i++) {
+      codes.push(`${randomBytes(3).toString('hex')}-${randomBytes(3).toString('hex')}`);
+    }
+    await this.prisma.$transaction([
+      this.prisma.recoveryCode.deleteMany({ where: { userId } }),
+      ...codes.map((c) =>
+        this.prisma.recoveryCode.create({
+          data: { userId, codeHash: bcrypt.hashSync(c, 10) },
+        }),
+      ),
+    ]);
+
+    return {
+      message: '2FA enabled. Future logins will require a code.',
+      recoveryCodes: codes,
+    };
   }
 
   // ------------------------------------------------------------------
@@ -302,6 +322,28 @@ export class AuthService {
     return { message: 'All sessions revoked.' };
   }
 
+  /**
+   * Single-use recovery-code redemption for the 2FA login step. Codes are
+   * stored as bcrypt hashes, so all unused codes of the user are compared
+   * (at most 8). Consumption is atomic: updateMany marks exactly one row
+   * and only proceeds when it matched an UNUSED code (race-safe).
+   */
+  private async tryRecoveryCode(userId: string, code: string): Promise<boolean> {
+    const unused = await this.prisma.recoveryCode.findMany({
+      where: { userId, usedAt: null },
+    });
+    for (const row of unused) {
+      if (bcrypt.compareSync(code, row.codeHash)) {
+        const marked = await this.prisma.recoveryCode.updateMany({
+          where: { id: row.id, userId, usedAt: null },
+          data: { usedAt: new Date() },
+        });
+        return marked.count === 1;
+      }
+    }
+    return false;
+  }
+
   // Second step of login: redeems the short-lived 2fa-challenge token.
   async loginWithTotp(challenge: string, code: string) {
     let payload: any;
@@ -321,7 +363,8 @@ export class AuthService {
       throw new UnauthorizedException('2FA is not enabled for this account.');
     }
 
-    const ok = authenticator.verify({ token: code, secret: user.totpSecret });
+    const ok = authenticator.verify({ token: code, secret: user.totpSecret })
+      || (await this.tryRecoveryCode(user.id, code));
     if (!ok) throw new UnauthorizedException('Invalid verification code.');
 
     // Same session shape as the standard login success path.

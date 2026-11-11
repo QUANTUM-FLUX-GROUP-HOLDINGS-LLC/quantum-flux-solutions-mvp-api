@@ -28,6 +28,7 @@ model Customer {
   businessTaxProfile BusinessTaxProfile?
   bookkeepingProfile BookkeepingProfile?
   refreshTokens      RefreshToken[]
+  recoveryCodes      RecoveryCode[]
 }
 
 model RefreshToken {
@@ -37,6 +38,15 @@ model RefreshToken {
   user      Customer  @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   revokedAt DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model RecoveryCode {
+  id        String    @id @default(uuid())
+  userId    String
+  user      Customer  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash  String
+  usedAt    DateTime?
   createdAt DateTime  @default(now())
 }
 
