@@ -61,4 +61,4 @@ Status: backlog 013 fully serviced. External verifications pending (below).
 1. DONE (2026-11-10, commit f7a1306): 2FA TOTP staff phase 1 delivered and E2E verified; phase 2 (QR, recovery codes, UI, rollout) remains.
 2. Close orphan audit once dashboard lists arrive.
 3. DONE (2026-11-10, commit e422bb3): single-use stream tickets; ?token= retired (see README roadmap item 3).
-4. Consider session hardening: short-lived JWT + refresh path.
+4. DONE (2026-11-11, commits ea8b6b0 + 170e673): 15m access JWT + rotating refresh tokens (see README roadmap item 4).

@@ -42,6 +42,11 @@ A single unified login page (`/login`) serves every role:
 *   Staff roles (`ADMIN`, `CREDIT_REPAIR`, ...) land on `/admin/dashboard`.
 *   The former `/staff-login` page was removed; `/admin/*` routes still block
     CLIENT accounts (the route guard signs them out).
+*   Sessions use a 15-minute access JWT plus a rotating opaque refresh
+    token (30 days, stored SHA-256-hashed). `apiFetch` refreshes silently
+    on 401; logout revokes the refresh chain server-side; reusing an
+    already-rotated refresh token revokes every session of that user
+    (theft detection). Legacy 1d tokens expire naturally after deploy.
 
 ## Test data (development only)
 `prisma/seed.ts` creates local dev users with password `password123`
@@ -110,6 +115,14 @@ Agreed order of implementation (decided 2026-11-09):
    travels in URLs. Trade-off accepted: tickets live in process
    memory (single-instance only); a restart just forces clients to
    fetch a fresh ticket on the normal error path.
+4. **Session hardening: DELIVERED** (2026-11-11, commits ea8b6b0 +
+   170e673).
+   Access JWT shortened 1d -> 15m; rotating refresh tokens via the
+   RefreshToken table (SHA-256 hashed, 30-day TTL, rotation on every
+   refresh; reuse of a rotated token revokes the user's whole chain;
+   POST /auth/logout revokes all). No forced logout. OPEN follow-up:
+   the `JWT_SECRET || 'super_secret_fallback'` fallback must be
+   confirmed/set in Render; changing it invalidates all sessions.
 
 ### Staff recovery escalation (2026-11-09)
 
@@ -140,3 +153,7 @@ identical for all users (anti-enumeration).
   (`stream?token=`, `getAuthToken`), never broad patterns that also match
   documenting comments or legitimate sibling flows such as the
   password-reset email link.
+- Lesson 16: commit blocks must re-run the gates INLINE
+  (`tsc && git add && git commit`), making a red push physically
+  impossible. This cycle breached L14 twice (Block H after a red Block
+  F published the incomplete ea8b6b0, fixed forward immediately).
