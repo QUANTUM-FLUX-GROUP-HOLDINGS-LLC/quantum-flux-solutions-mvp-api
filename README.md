@@ -120,7 +120,7 @@ runbook (`docs/runbooks/staff-password-recovery.md`). Set
 without it the attempt is only logged. The endpoint response stays
 identical for all users (anti-enumeration).
 
-### Patch-script lessons (cycle 013 incidents)
+### Patch-script lessons (cycles 013-014 incidents)
 
 - Lesson 11: an anchor must never span more than one functional brace;
   if it includes a brace belonging to prior code, the replacement must
@@ -131,3 +131,12 @@ identical for all users (anti-enumeration).
 - Lesson 13: when building an anchor from sed/cat output, count the
   exact leading spaces (a 6-vs-4 space indent caused the first repair
   attempt to ABORT; the anchor must be copied verbatim from the output).
+- Lesson 14: a red gate aborts the ENTIRE planned chain, not just its own
+  block. No later block runs until the red is triaged and either fixed or
+  explicitly justified (cycle 014: commit block ran while the preceding
+  residue gate was red; e422bb3 was benign only by luck and had to be
+  re-validated post-hoc).
+- Lesson 15: residue gates must target the exact retired symbol
+  (`stream?token=`, `getAuthToken`), never broad patterns that also match
+  documenting comments or legitimate sibling flows such as the
+  password-reset email link.
