@@ -68,8 +68,7 @@ inputs; E2E post-deploy pending (below).
 
 ## Proposed backlog 015
 
-1. Remove the JWT_SECRET fallback: fail fast at boot when unset
-   (runtime config check, not a silent default).
+1. DONE (2026-11-11, commit 261dbcd): fail-fast at bootstrap; both fallbacks removed (see README roadmap item 4).
 2. Close orphan audit once dashboard lists arrive.
 3. 2FA TOTP phase 2: QR rendering, 8 hashed recovery codes, staff UI,
    rollout (phase 1 in f7a1306).

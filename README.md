@@ -120,9 +120,11 @@ Agreed order of implementation (decided 2026-11-09):
    Access JWT shortened 1d -> 15m; rotating refresh tokens via the
    RefreshToken table (SHA-256 hashed, 30-day TTL, rotation on every
    refresh; reuse of a rotated token revokes the user's whole chain;
-   POST /auth/logout revokes all). No forced logout. OPEN follow-up:
-   the `JWT_SECRET || 'super_secret_fallback'` fallback must be
-   confirmed/set in Render; changing it invalidates all sessions.
+   POST /auth/logout revokes all). No forced logout. Follow-up DELIVERED (commit
+   261dbcd): JWT_SECRET fallbacks removed; the backend refuses to boot
+   without it (fail-fast in main.ts bootstrap). REMAINING (owner):
+   confirm JWT_SECRET is set in Render, and rotate the secret at least
+   once (assume the shipped fallback was compromise-eligible).
 
 ### Staff recovery escalation (2026-11-09)
 
