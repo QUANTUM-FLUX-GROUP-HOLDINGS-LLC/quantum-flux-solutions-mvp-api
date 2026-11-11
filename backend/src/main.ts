@@ -5,6 +5,20 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 
 async function bootstrap() {
+  // Fail fast (backlog 015 item 1): the JWT secret MUST come from the
+  // environment. Refuse to boot rather than silently signing tokens
+  // with a fallback constant that ships in the repository.
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    console.error(
+      '[BOOT] FATAL: JWT_SECRET is not set. Refusing to start. ' +
+      'Set it in the environment (Render env vars / local .env) and restart.',
+    );
+    process.exit(1);
+  }
+  if (jwtSecret.length < 32) {
+    console.warn(`[BOOT] WARNING: JWT_SECRET is ${jwtSecret.length} chars; 32+ recommended. Continuing.`);
+  }
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
   
   // Configuración de CORS dinámica
