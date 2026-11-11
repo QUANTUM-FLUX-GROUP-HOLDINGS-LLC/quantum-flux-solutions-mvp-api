@@ -1,7 +1,8 @@
 import { AdminLayout } from '../../modules/shared/AdminLayout';
 import { useAuth } from '../../modules/shared/auth-context';
 import { ChangePasswordForm } from '../../modules/settings/components/ChangePasswordForm';
-import { User, Lock } from 'lucide-react';
+import { TwoFactorPanel } from '../../modules/settings/components/TwoFactorPanel';
+import { User, Lock, ShieldCheck } from 'lucide-react';
 
 export default function AdminSettingsPage() {
   const { user } = useAuth();
@@ -54,6 +55,17 @@ export default function AdminSettingsPage() {
           </div>
           <div className="p-6">
             <ChangePasswordForm />
+          </div>
+        </div>
+
+        {/* Two-Factor Authentication section */}
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-gray-200 bg-gray-50 flex items-center gap-3">
+            <ShieldCheck className="w-5 h-5 text-gray-500" />
+            <h2 className="text-lg font-bold text-gray-800">Two-Factor Authentication</h2>
+          </div>
+          <div className="p-6">
+            <TwoFactorPanel />
           </div>
         </div>
       </div>
