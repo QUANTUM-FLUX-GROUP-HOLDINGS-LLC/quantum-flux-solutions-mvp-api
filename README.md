@@ -102,10 +102,14 @@ Agreed order of implementation (decided 2026-11-09):
    NOT yet delivered (phase 2): QR code rendering (URI is copy/manual-entry
    for now), 8 hashed recovery codes, frontend UI screens, and rollout.
    Recovery today: manual Super Admin runbook clears the TOTP columns.
-3. **Known debt to pair with 2FA:** the SSE inbox stream currently
-   authenticates via `?token=` query param (EventSource cannot set
-   headers). Upgrade candidate: single-use stream tickets exchanged for
-   the JWT, to keep tokens out of access logs.
+3. **SSE stream auth (?token= debt): RETIRED** (2026-11-10, commit
+   e422bb3). The inbox stream now exchanges the Bearer JWT for a
+   single-use, 30s ticket via POST /messages/stream-ticket
+   (JwtAuthGuard); GET /messages/stream redeems ?ticket= exactly once
+   (sse-tickets.service.ts, SseAuthGuard). The session JWT never
+   travels in URLs. Trade-off accepted: tickets live in process
+   memory (single-instance only); a restart just forces clients to
+   fetch a fresh ticket on the normal error path.
 
 ### Staff recovery escalation (2026-11-09)
 
