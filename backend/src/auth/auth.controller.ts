@@ -48,6 +48,19 @@ export class AuthController {
     return this.authService.changePassword(userId, body.currentPassword, body.newPassword);
   }
 
+  // Public: rotates the refresh token and issues a fresh 15m access JWT.
+  @Post('refresh')
+  refresh(@Body() body: any) {
+    return this.authService.refresh(body.refreshToken);
+  }
+
+  // Authenticated: revokes every refresh token of the caller (logout).
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  logout(@Req() req: any) {
+    return this.authService.revokeAllSessions(req.user.id || req.user.sub);
+  }
+
   // -------------------------------------------------------------------
   // TOTP 2FA (staff). Setup/activate require a valid session; the second
   // login step redeems the challenge issued by POST /auth/login.

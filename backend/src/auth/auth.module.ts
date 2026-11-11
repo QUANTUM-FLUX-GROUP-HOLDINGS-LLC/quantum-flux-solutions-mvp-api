@@ -10,7 +10,8 @@ import { JwtStrategy } from './jwt.strategy';
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'super_secret_fallback',
-      signOptions: { expiresIn: '1d' },
+      // Short-lived access JWT (cycle 014); sessions extend via /auth/refresh.
+      signOptions: { expiresIn: '15m' },
     }),
   ],
   providers: [AuthService, JwtStrategy],

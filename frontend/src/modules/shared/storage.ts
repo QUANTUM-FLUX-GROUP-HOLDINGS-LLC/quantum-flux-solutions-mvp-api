@@ -43,16 +43,30 @@ export const migrateLegacySession = (): void => {
   }
 };
 
-export const writeSession = (token: string, user: unknown) => {
+export const writeSession = (token: string, user: unknown, refreshToken?: string | null) => {
   if (typeof window === 'undefined') return;
   localStorage.setItem(SESSION_PREFIX + 'token', token);
   localStorage.setItem(SESSION_PREFIX + 'user', JSON.stringify(user));
+  if (refreshToken) localStorage.setItem(SESSION_PREFIX + 'refreshToken', refreshToken);
+  else localStorage.removeItem(SESSION_PREFIX + 'refreshToken');
+};
+
+export const setSessionToken = (token: string) => {
+  if (typeof window !== 'undefined') localStorage.setItem(SESSION_PREFIX + 'token', token);
+};
+
+export const getSessionRefreshToken = (): string | null =>
+  typeof window === 'undefined' ? null : localStorage.getItem(SESSION_PREFIX + 'refreshToken');
+
+export const setSessionRefreshToken = (token: string) => {
+  if (typeof window !== 'undefined') localStorage.setItem(SESSION_PREFIX + 'refreshToken', token);
 };
 
 export const clearSession = () => {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(SESSION_PREFIX + 'token');
   localStorage.removeItem(SESSION_PREFIX + 'user');
+  localStorage.removeItem(SESSION_PREFIX + 'refreshToken');
   for (const p of LEGACY_PREFIXES) {
     localStorage.removeItem(p + 'token');
     localStorage.removeItem(p + 'user');

@@ -1,9 +1,13 @@
 import { Injectable, Logger, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { createHash, randomBytes } from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../core/database/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { MailService } from '../mail/mail.service';
 import { authenticator } from 'otplib';
+
+// Refresh-token lifetime; the access JWT itself lives 15m.
+const REFRESH_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 // Tolerate ±1 step (30s) of clock drift between server and authenticator.
 authenticator.options = { window: 1 };
@@ -53,9 +57,11 @@ export class AuthService {
 
     const payload = { sub: user.id, email: user.email, role: user.role };
     const token = this.jwt.sign(payload);
+    const refreshToken = await this.issueRefreshToken(user.id);
 
     return {
       token,
+      refreshToken,
       user: {
         id: user.id,
         email: user.email,
@@ -229,6 +235,73 @@ export class AuthService {
     return { message: '2FA enabled. Future logins will require a code.' };
   }
 
+  // ------------------------------------------------------------------
+  // Rotating refresh tokens (session hardening, cycle 014). The access
+  // JWT is short-lived (15m); these opaque tokens extend the session.
+  // Every refresh rotates the token; reusing an already-rotated token
+  // revokes the user's whole chain (theft detection). Only SHA-256
+  // hashes are persisted.
+  // ------------------------------------------------------------------
+
+  private async issueRefreshToken(userId: string) {
+    const raw = randomBytes(48).toString('base64url');
+    await this.prisma.refreshToken.create({
+      data: {
+        tokenHash: createHash('sha256').update(raw).digest('hex'),
+        userId,
+        expiresAt: new Date(Date.now() + REFRESH_TTL_MS),
+      },
+    });
+    return raw;
+  }
+
+  async refresh(rawRefreshToken: string) {
+    const tokenHash = createHash('sha256').update(rawRefreshToken).digest('hex');
+    const stored = await this.prisma.refreshToken.findUnique({ where: { tokenHash } });
+    if (!stored) throw new UnauthorizedException('Invalid refresh token.');
+
+    if (stored.revokedAt) {
+      // This token was already rotated; assume theft and revoke the chain.
+      await this.prisma.refreshToken.updateMany({
+        where: { userId: stored.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      throw new UnauthorizedException('Invalid refresh token.');
+    }
+    if (stored.expiresAt <= new Date()) throw new UnauthorizedException('Expired refresh token.');
+
+    // Rotate: retire the presented token, then issue a fresh pair.
+    await this.prisma.refreshToken.update({
+      where: { id: stored.id },
+      data: { revokedAt: new Date() },
+    });
+    const user = await this.prisma.customer.findUnique({ where: { id: stored.userId } });
+    if (!user) throw new UnauthorizedException('Invalid refresh token.');
+
+    const token = this.jwt.sign({ sub: user.id, email: user.email, role: user.role });
+    const refreshToken = await this.issueRefreshToken(user.id);
+    return {
+      token,
+      refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        status: user.status,
+        services: user.services ?? [],
+      },
+    };
+  }
+
+  async revokeAllSessions(userId: string) {
+    await this.prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    return { message: 'All sessions revoked.' };
+  }
+
   // Second step of login: redeems the short-lived 2fa-challenge token.
   async loginWithTotp(challenge: string, code: string) {
     let payload: any;
@@ -253,8 +326,10 @@ export class AuthService {
 
     // Same session shape as the standard login success path.
     const token = this.jwt.sign({ sub: user.id, email: user.email, role: user.role });
+    const refreshToken = await this.issueRefreshToken(user.id);
     return {
       token,
+      refreshToken,
       user: {
         id: user.id,
         email: user.email,

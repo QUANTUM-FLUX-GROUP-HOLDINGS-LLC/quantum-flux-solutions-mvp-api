@@ -27,6 +27,17 @@ model Customer {
   taxProfile TaxProfile?
   businessTaxProfile BusinessTaxProfile?
   bookkeepingProfile BookkeepingProfile?
+  refreshTokens      RefreshToken[]
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  userId    String
+  user      Customer  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
 }
 
 model Document {
