@@ -43,6 +43,12 @@ inputs; E2E post-deploy pending (below).
 - Render: add ADMIN_NOTIFY_EMAIL (suggested support@quantumfluxsolutions.com).
 - Render: confirm SUPABASE_URL real vs mock (document-loss risk per deploy).
 - Orphan audit: paste Render services, Vercel projects and DNS records
+- OPS WARNING: the local backend/.env points at the PRODUCTION Supabase
+  (pooler host), so every local script run hits real data. Never run the
+  full seed from a laptop (it would create admin@test.com ADMIN accounts
+  with a known password in prod). The cycle-014 smoke used a targeted
+  single-account upsert of client1@test.com instead. Backlog candidate:
+  a separate local dev database.
   into docs/orphan-audit.md TODOs (verdicts: suspend, observe, delete).
 
 ## E2E post-deploy checklist
